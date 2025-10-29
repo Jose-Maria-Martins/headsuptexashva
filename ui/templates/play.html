@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Against AI - Poker AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Play Against AI</h1>
+        
+        <div id="setup-screen">
+            <h2>Choose Your Opponent</h2>
+            <div class="difficulty-options">
+                <div class="difficulty-card" onclick="startGame('v0')">
+                    <h3>Easy (V0)</h3>
+                    <p>Random Bot</p>
+                </div>
+                <div class="difficulty-card" onclick="startGame('v1')">
+                    <h3>Medium (V1)</h3>
+                    <p>Hand Strength</p>
+                </div>
+                <div class="difficulty-card" onclick="startGame('v2')">
+                    <h3>Hard (V2)</h3>
+                    <p>Monte Carlo</p>
+                </div>
+            </div>
+            <button onclick="window.location.href='/'">Back to Menu</button>
+        </div>
+        
+        <div id="game-screen" style="display:none;">
+            <div id="winner-banner" class="winner-banner" style="display:none;"></div>
+            <div class="match-header">
+                <h2>Human vs Bot</h2>
+                <div class="match-info">
+                    <p>Blinds: 10/20 | Stacks start at 1000</p>
+                </div>
+            </div>
+
+            <div class="table-area">
+                <div class="player player-left">
+                    <div class="player-badge">You</div>
+                    <div id="your-cards" class="cards"></div>
+                    <div class="stat-grid">
+                        <div class="stat"><span class="stat-label">Your Stack</span> <span id="your-stack" class="stat-value">1000</span></div>
+                    </div>
+                </div>
+                <div class="board">
+                    <div id="board-cards" class="cards"></div>
+                    <div class="pot">
+                        Pot: <span id="pot">0</span>
+                        <div class="pot-breakdown">
+                            <span>Your bet: <span id="your-bet">0</span></span>
+                            <span>Bot bet: <span id="bot-bet">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="player player-right">
+                    <div class="player-badge">Bot</div>
+                    <div id="bot-cards" class="cards face-down"></div>
+                    <div class="stat-grid">
+                        <div class="stat"><span class="stat-label">Bot Stack</span> <span id="bot-stack" class="stat-value">1000</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="action-panel" class="controls sticky-controls">
+                <div id="action-toast" class="action-toast" style="display:none;"></div>
+                <div id="status-line">Waiting...</div>
+                <div class="action-row">
+                    <button id="btn-fold" class="btn btn-fold" onclick="sendAction('fold')">Fold (F)</button>
+                    <button id="btn-call" class="btn btn-call" onclick="sendAction('call')">Call (C)</button>
+                    <div class="bet-group">
+                        <input id="bet-size" class="bet-input" type="number" min="1" value="20" step="5">
+                        <button id="btn-bet" class="btn btn-raise" onclick="sendAction('bet')">Bet / Raise (R)</button>
+                    </div>
+                </div>
+                <div class="meta-row">
+                    <span>To call: <span id="to-call">0</span> | Street: <span id="street">preflop</span></span>
+                    <button class="btn-secondary" onclick="nextHand()">Next Hand</button>
+                </div>
+            </div>
+
+            <div class="history">
+                <h3>History</h3>
+                <ul id="history-list"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function renderCards(containerId, cards) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = cards.map(c => `<span class="card">${c.rank}${c.suit}</span>`).join('');
+        }
+
+        let _lastHistoryLen = 0;
+        function showToast(message, emphasize=false) {
+            const toast = document.getElementById('action-toast');
+            toast.textContent = message;
+            toast.classList.toggle('emph', emphasize);
+            toast.style.display = 'block';
+            toast.classList.remove('fade');
+            // force reflow to restart animation
+            void toast.offsetWidth;
+            toast.classList.add('fade');
+            setTimeout(() => { toast.style.display = 'none'; }, 1400);
+        }
+
+        function chipPop() {
+            const panel = document.getElementById('action-panel');
+            const chip = document.createElement('div');
+            chip.className = 'chip-pop';
+            chip.textContent = '💰';
+            panel.appendChild(chip);
+            setTimeout(() => panel.removeChild(chip), 800);
+        }
+
+        function applyState(s) {
+            document.getElementById('your-stack').textContent = s.stacks[0];
+            document.getElementById('bot-stack').textContent = s.stacks[1];
+            document.getElementById('pot').textContent = s.pot;
+            if (s.current_bets && s.current_bets.length === 2) {
+                document.getElementById('your-bet').textContent = s.current_bets[0];
+                document.getElementById('bot-bet').textContent = s.current_bets[1];
+            }
+            document.getElementById('to-call').textContent = s.to_call;
+            document.getElementById('street').textContent = s.street;
+            renderCards('your-cards', s.human);
+            renderCards('board-cards', s.board);
+            const botEl = document.getElementById('bot-cards');
+            if (s.hand_over && s.bot && s.bot.length) {
+                renderCards('bot-cards', s.bot);
+                botEl.classList.remove('face-down');
+            } else {
+                botEl.innerHTML = '';
+                botEl.classList.add('face-down');
+            }
+            const hist = document.getElementById('history-list');
+            hist.innerHTML = s.history.map(h => `<li>${h}</li>`).join('');
+            // Action toast on new history
+            if (Array.isArray(s.history) && s.history.length > _lastHistoryLen) {
+                const last = s.history[s.history.length - 1] || '';
+                showToast(last, /raises|bets/i.test(last));
+                if (/raises|bets/i.test(last)) chipPop();
+                _lastHistoryLen = s.history.length;
+            }
+            const yourTurn = s.your_turn && !s.hand_over;
+            document.getElementById('btn-fold').disabled = !yourTurn;
+            const callBtn = document.getElementById('btn-call');
+            callBtn.disabled = !yourTurn;
+            document.getElementById('btn-bet').disabled = !yourTurn;
+            document.getElementById('bet-size').disabled = !yourTurn;
+            document.getElementById('status-line').textContent = yourTurn ? 'Your turn' : (s.hand_over ? 'Hand over' : 'Bot thinking...');
+            // Update Call/Check label to show payment
+            if (s.to_call && s.to_call > 0) {
+                callBtn.textContent = `Call (C) - ${s.to_call}`;
+            } else {
+                callBtn.textContent = 'Check (C)';
+            }
+
+            const banner = document.getElementById('winner-banner');
+            if (s.hand_over) {
+                const last = (s.history && s.history.length) ? s.history[s.history.length - 1] : 'Hand over';
+                banner.textContent = last;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        function startGame(difficulty) {
+            fetch('/api/play/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({difficulty: difficulty})
+            })
+            .then(r => r.json())
+            .then(() => {
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'block';
+                return fetch('/api/play/next-hand', {method:'POST'});
+            })
+            .then(r => r.json())
+            .then(applyState);
+        }
+
+        function nextHand() {
+            fetch('/api/play/next-hand', {method:'POST'})
+            .then(r => r.json())
+            .then(applyState);
+        }
+
+        function sendAction(kind) {
+            const size = parseInt(document.getElementById('bet-size').value || '0');
+            fetch('/api/play/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: kind, size: size})
+            })
+            .then(r => r.json())
+            .then(applyState);
+        }
+
+        // Keyboard shortcuts for quick actions
+        document.addEventListener('keydown', (e) => {
+            const gameVisible = document.getElementById('game-screen').style.display !== 'none';
+            if (!gameVisible) return;
+            const fold = document.getElementById('btn-fold');
+            const call = document.getElementById('btn-call');
+            const raise = document.getElementById('btn-bet');
+            if (e.key.toLowerCase() === 'f' && !fold.disabled) { e.preventDefault(); sendAction('fold'); }
+            if (e.key.toLowerCase() === 'c' && !call.disabled) { e.preventDefault(); sendAction('call'); }
+            if (e.key.toLowerCase() === 'r' && !raise.disabled) { e.preventDefault(); sendAction('bet'); }
+        });
+
+        // Live update raise button label
+        const betInput = document.getElementById('bet-size');
+        const betBtn = document.getElementById('btn-bet');
+        if (betInput && betBtn) {
+            betInput.addEventListener('input', () => {
+                const v = parseInt(betInput.value || '0');
+                betBtn.textContent = v > 0 ? `Raise to ${v} (R)` : 'Bet / Raise (R)';
+            });
+        }
+    </script>
+</body>
+</html>
+
+

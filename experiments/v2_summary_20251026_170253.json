@@ -1,0 +1,67 @@
+{
+  "config": {
+    "bot_a": "handstrength",
+    "bot_b": "random",
+    "matches": 200,
+    "hands": 200,
+    "seeds": 10,
+    "stack": 1000,
+    "small_blind": 10,
+    "big_blind": 20,
+    "rollouts": 0
+  },
+  "results": {
+    "matches": 2000,
+    "match_wins_A": 1644,
+    "match_wins_B": 356,
+    "match_win_rate_A": 0.822,
+    "match_win_rate_A_CI95": [
+      0.8046230326236978,
+      0.8381423436415718
+    ],
+    "avg_final_stack_A": 1640.088,
+    "avg_final_stack_B": 359.504,
+    "stack_diff": 1280.5839999999998,
+    "profit_per_match_A": 640.088,
+    "profit_per_hand_A": 3.20044,
+    "hands_per_second": 89068.37848695366,
+    "total_hands": 122964,
+    "total_time_sec": 1.3805572986602783,
+    "actions_A": {
+      "fold": 8510,
+      "call": 19172,
+      "raise": 142191
+    },
+    "actions_B": {
+      "fold": 48097,
+      "call": 48118,
+      "raise": 77310
+    },
+    "wins_by_rank_A": [
+      4747,
+      10898,
+      11365,
+      1962,
+      1039,
+      1059,
+      1172,
+      137,
+      60
+    ],
+    "wins_by_rank_B": [
+      3161,
+      10503,
+      11883,
+      2141,
+      1244,
+      1239,
+      1126,
+      158,
+      58
+    ]
+  },
+  "artifacts": {
+    "csv": "experiments\\v2_matches_20251026_170253.csv",
+    "json": "experiments\\v2_summary_20251026_170253.json"
+  }
+}

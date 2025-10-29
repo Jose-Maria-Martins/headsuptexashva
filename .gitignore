@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & caches
+*.log
+.cache/
+
+# Build artifacts (Python/C++)
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Compiled extensions / binaries
+*.pyd
+*.so
+*.dll
+*.lib
+*.exp
+*.pdb
+*.obj
+*.exe
+
+# CMake / Ninja / Visual Studio
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+cpp_engine/build/
+Makefile
+CMakeScripts/
+Testing/
+compile_commands.json
+*.ninja
+.ninja_deps
+.ninja_log
+*.vcxproj*
+*.sln
+ipch/
+
+# Node (if any)
+node_modules/
+
+# Flask runtime
+instance/
+
+# Data & experiment outputs (keep summaries, ignore heavy runs)
+experiments/*_matches_*.csv
+experiments/*_hands_*.csv
+experiments/*_raw_*.json
+*.tmp
+
+# Local config/secrets
+*.env
+.env.*
+secret*/
+
+# Coverage/test
+.coverage*
+htmlcov/
+.pytest_cache/
+
+# Misc
+~$*
+*.swp
+*.swo

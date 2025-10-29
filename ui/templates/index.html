@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker AI - Main Menu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🎴 Poker AI</h1>
+        <h2>Research Project - Heads-Up Poker Bot</h2>
+        
+        <div class="menu-options">
+            <div class="menu-card" onclick="window.location.href='/bot-vs-bot'">
+                <h3>Bot vs Bot</h3>
+                <p>Watch AI bots compete</p>
+            </div>
+            
+            <div class="menu-card" onclick="window.location.href='/play'">
+                <h3>Play Against AI</h3>
+                <p>Challenge the bots yourself</p>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Available Bots:</strong></p>
+            <ul>
+                <li><strong>V0 (Easy):</strong> Random actions</li>
+                <li><strong>V1 (Medium):</strong> Hand strength based</li>
+                <li><strong>V2 (Hard):</strong> Monte Carlo simulation</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+
+
+

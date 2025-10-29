@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot vs Bot - Poker AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Bot vs Bot Spectator Mode</h1>
+        
+        <div id="setup-screen">
+            <h2>Configure Match</h2>
+            <div class="form-group">
+                <label>Bot A (Player 0):</label>
+                <select id="botA">
+                    <option value="v0">V0 - Random</option>
+                    <option value="v1">V1 - Hand Strength</option>
+                    <option value="v2">V2 - Monte Carlo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Bot B (Player 1):</label>
+                <select id="botB">
+                    <option value="v0">V0 - Random</option>
+                    <option value="v1">V1 - Hand Strength</option>
+                    <option value="v2">V2 - Monte Carlo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Hands to play:</label>
+                <input type="number" id="hands" value="200" min="50" max="500" step="50">
+            </div>
+            
+            <button onclick="startMatch()">Start Match</button>
+            <button onclick="window.location.href='/'">Back to Menu</button>
+        </div>
+        
+        <div id="game-screen" style="display:none;">
+            <div id="winner-banner" class="winner-banner" style="display:none;"></div>
+            <div class="match-header">
+                <h2 id="match-title">Match in Progress</h2>
+                <div class="match-info">
+                    <p><strong id="bot-a-label">Bot A</strong> vs <strong id="bot-b-label">Bot B</strong></p>
+                    <p>Blinds: 10/20 | Starting Stacks: 1000</p>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <p>Hand <span id="current-hand">0</span> / <span id="total-hands">0</span></p>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+            
+            <div class="players">
+                <div class="player player-left">
+                    <div class="player-badge">Player 1</div>
+                    <h3 id="player0-name">V0 - Random</h3>
+                    <div class="stat-grid">
+                        <div class="stat">
+                            <span class="stat-label">Stack</span>
+                            <span class="stat-value" id="player0-stack">1000</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Hands Won</span>
+                            <span class="stat-value" id="player0-wins">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Win Rate</span>
+                            <span class="stat-value" id="player0-winrate">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="vs-section">
+                    <div class="vs">VS</div>
+                </div>
+                
+                <div class="player player-right">
+                    <div class="player-badge">Player 2</div>
+                    <h3 id="player1-name">V0 - Random</h3>
+                    <div class="stat-grid">
+                        <div class="stat">
+                            <span class="stat-label">Stack</span>
+                            <span class="stat-value" id="player1-stack">1000</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Hands Won</span>
+                            <span class="stat-value" id="player1-wins">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Win Rate</span>
+                            <span class="stat-value" id="player1-winrate">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls sticky-controls">
+                <button onclick="togglePause()" id="pause-btn" style="display:none;">Pause</button>
+                <button onclick="window.location.href='/bot-vs-bot'">New Match</button>
+            </div>
+            
+            <div id="results" style="display:none;">
+                <h3>Match Complete!</h3>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h4 id="winner-name">Winner</h4>
+                        <p class="winner-badge">Victory!</p>
+                    </div>
+                    <div class="result-card">
+                        <p><strong>Final Stacks:</strong></p>
+                        <p id="final-stacks"></p>
+                    </div>
+                    <div class="result-card">
+                        <p><strong>Total Hands:</strong></p>
+                        <p id="total-hands-played"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/bot_vs_bot.js') }}"></script>
+    <script>
+        // Show a clear winner banner when finished
+        (function() {
+            const originalShowResults = window.showResults;
+            window.showResults = function(data) {
+                originalShowResults(data);
+                const banner = document.getElementById('winner-banner');
+                const p0Name = document.getElementById('player0-name').textContent;
+                const p1Name = document.getElementById('player1-name').textContent;
+                const winner = data.p0_stack > data.p1_stack ? p0Name : p1Name;
+                banner.textContent = `Winner: ${winner}`;
+                banner.style.display = 'block';
+            }
+        })();
+    </script>
+</body>
+</html>
+
