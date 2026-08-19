@@ -39,12 +39,14 @@ class RandomBot:
         Action = poker_engine.Action
         
         if to_call == 0:
-            # Choose between CHECK or BET
+            # Can check (always allowed) or bet (if raise cap allows)
+            # Choose between CHECK or BET - if BET not allowed, simulator/UI will convert to CHECK
             if self._rng.random() < 0.5:
                 return Action.CHECK
             return Action.BET
         else:
-            # Choose between FOLD, CALL, RAISE
+            # Facing a bet: Choose between FOLD, CALL, RAISE
+            # If RAISE not allowed (raise cap), simulator/UI will handle it
             r = self._rng.random()
             if r < 0.33:
                 return Action.FOLD

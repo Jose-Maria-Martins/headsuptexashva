@@ -1,0 +1,44 @@
+\subsection{Limitations}
+
+The betting system abstraction represents the primary methodological limitation. Our simplified two-round model (preflop and postflop with all five board cards revealed simultaneously) eliminates several strategic dimensions present in full heads-up No-Limit Hold'em. Notably absent are intermediate betting rounds (flop and turn), multi-street pressure accumulation, and progressive board texture exploitation. Additionally, the three-raise cap per betting round artificially constrains late-stage aggression and complex betting sequences that would naturally emerge in uncapped play.
+
+This abstraction prioritises computational efficiency and interpretability over complete game-theoretic realism, enabling rapid simulation and clear strategic analysis at the cost of reduced strategic depth. However, this trade-off is justified by the study's focus on comparing algorithmic approaches rather than achieving optimal play, as evidenced by the clear performance hierarchy established between bot variants.
+
+================================================================================
+DETAILED RESULTS
+================================================================================
+
+Experiment Configuration: All tests use 10 seeds × 100 matches × 200 hands per match,
+with stacks of 1000 chips and blinds of 10/20. Position alternation verified through
+self-play controls. Performance metrics: win rate (Bot A), 95% Wilson confidence intervals,
+average final stack difference, simulation speed (hands/second), and total execution time.
+
+------------------------------------------------------------------------------------------------------------------------
+Experiment                                         Win Rate A   95% CI               Stack Diff   Hands/sec    Time
+------------------------------------------------------------------------------------------------------------------------
+V1 (HandStrength) vs V0 (Random) - Baseline         99.9% [99.6%, 100.0%]           +1966     98,851    2.4s
+V2 (MonteCarlo) vs V0 (Random) - Main Test         100.0% [99.8%, 100.0%]           +1999      1,529  108.7s
+V2 (MonteCarlo) vs V1 (HandStrength) - Comparison    93.3% [92.2%, 94.4%]            +1620        969  257.3s
+V2 (MonteCarlo) vs V2 (MonteCarlo) - Position Bias   48.8% [46.6%, 51.0%]              -39        364  850.1s
+V1 (HandStrength) vs V1 (HandStrength) - Position    49.6% [47.5%, 51.8%]               -8     29,463   10.7s
+V0 (Random) vs V0 (Random) - Control Group           49.9% [47.7%, 52.0%]               -5    104,812    4.1s
+------------------------------------------------------------------------------------------------------------------------
+
+================================================================================
+PERFORMANCE SUMMARY
+================================================================================
+
+Dominance Hierarchy: Both V1 and V2 demonstrate near-perfect performance against
+random play (99.9% and 100.0% respectively), establishing strong baselines. V2
+achieves a 93.3% win rate against V1, indicating a significant strategic advantage
+from Monte Carlo equity estimation over hand strength heuristics.
+
+Position Bias Validation: Self-play tests confirm minimal position bias across all
+bot variants (V2: 1.2% deviation from 50%, V1: 0.4%, V0: 0.1%), validating the
+button alternation mechanism and ensuring fair comparison conditions.
+
+Computational Trade-offs: V2's Monte Carlo approach achieves superior performance
+(93.3% vs V1) but at substantially higher computational cost (969 vs 98,851 hands/sec),
+reflecting the overhead of equity simulation. The 257.3s execution time for V2 vs V1
+remains acceptable for batch evaluation but limits real-time application without
+optimization.

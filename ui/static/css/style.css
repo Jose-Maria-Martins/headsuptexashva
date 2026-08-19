@@ -107,6 +107,14 @@ button:hover {
     transform: scale(1.05);
 }
 
+/* Disabled buttons */
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: grayscale(20%);
+}
+
 button:active {
     transform: scale(0.95);
 }
@@ -341,6 +349,12 @@ button:active {
 
 .btn-raise:hover { background: #70c270; }
 
+/* Emphasize disabled state for raise specifically */
+.btn-raise:disabled {
+    background: #3e5a3e;
+    color: #a9b5aa;
+}
+
 .btn-secondary {
     background: rgba(255, 255, 255, 0.15);
     color: #ffd700;
@@ -457,11 +471,11 @@ button:active {
     gap: 10px;
 }
 
-.card-spades, .card-clubs {
+.card.card-spades, .card.card-clubs {
     color: black;
 }
 
-.card-hearts, .card-diamonds {
+.card.card-hearts, .card.card-diamonds {
     color: red;
 }
 

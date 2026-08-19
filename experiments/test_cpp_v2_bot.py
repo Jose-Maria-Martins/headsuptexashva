@@ -13,7 +13,13 @@ import csv
 import math
 import argparse
 from datetime import datetime
-import random
+
+from experiments.manifest_utils import (
+    build_provenance,
+    default_run_dir,
+    load_manifest,
+    resolve_seeds,
+)
 
 
 def wilson_ci(p: float, n: int, z: float = 1.96):
@@ -148,18 +154,51 @@ if __name__ == "__main__":
     parser.add_argument("--sb", type=int, default=10)
     parser.add_argument("--bb", type=int, default=20)
     parser.add_argument("--rollouts", type=int, default=300, help="Monte Carlo rollouts")
-    parser.add_argument("--out", type=str, default="experiments")
+    parser.add_argument("--out", type=str, default="experiments/runs")
+    parser.add_argument("--manifest", type=str, default=None, help="Experiment manifest JSON")
+    parser.add_argument("--replay", type=str, default=None, help="Replay from prior summary/manifest JSON")
+    parser.add_argument("--seed-list", type=str, default=None, help="Comma-separated explicit seeds")
     args = parser.parse_args()
+
+    if args.replay:
+        replay_data = load_manifest(args.replay)
+        cfg = replay_data.get("config", replay_data)
+        args.botA = cfg.get("bot_a", args.botA)
+        args.botB = cfg.get("bot_b", args.botB)
+        args.matches = cfg.get("matches", args.matches)
+        args.hands = cfg.get("hands", cfg.get("hands_per_match", args.hands))
+        args.stack = cfg.get("stack", args.stack)
+        args.sb = cfg.get("small_blind", args.sb)
+        args.bb = cfg.get("big_blind", args.bb)
+        args.rollouts = cfg.get("rollouts", args.rollouts)
+        seed_values = cfg.get("seeds") or resolve_seeds(replay_data)
+    elif args.manifest:
+        manifest = load_manifest(args.manifest)
+        args.botA = manifest.get("bot_a", args.botA)
+        args.botB = manifest.get("bot_b", args.botB)
+        args.matches = manifest.get("matches", args.matches)
+        args.hands = manifest.get("hands_per_match", manifest.get("hands", args.hands))
+        args.stack = manifest.get("stack", args.stack)
+        args.sb = manifest.get("small_blind", args.sb)
+        args.bb = manifest.get("big_blind", args.bb)
+        args.rollouts = manifest.get("rollouts", args.rollouts)
+        seed_values = resolve_seeds(manifest)
+    elif args.seed_list:
+        seed_values = [int(s.strip()) for s in args.seed_list.split(",") if s.strip()]
+    else:
+        # Deterministic default schedule (no wall-clock seeds)
+        seed_values = list(range(1001, 1001 + args.seeds))
 
     print("=" * 80)
     print("C++ SIMULATION - MONTE CARLO BOT (V2) COMPREHENSIVE TESTING")
     print("=" * 80)
-    print(f"[CONFIG] matches={args.matches} hands={args.hands} seeds={args.seeds} stack={args.stack} sb/bb={args.sb}/{args.bb}")
+    print(f"[CONFIG] matches={args.matches} hands={args.hands} seeds={len(seed_values)} stack={args.stack} sb/bb={args.sb}/{args.bb}")
+    print(f"[SEEDS] {seed_values}")
     print(f"[BOTS] {args.botA.upper()} vs {args.botB.upper()}")
     if args.botA == "montecarlo" or args.botB == "montecarlo":
         print(f"[MONTE CARLO] rollouts={args.rollouts}")
     
-    expected_hands = args.matches * args.hands * args.seeds
+    expected_hands = args.matches * args.hands * len(seed_values)
     print(f"[ESTIMATE] ~{expected_hands:,} hands total (may finish early if stacks run out)")
 
     all_rows = []
@@ -171,9 +210,8 @@ if __name__ == "__main__":
     total_elapsed = 0.0
     total_hands_global = 0
 
-    for s in range(args.seeds):
-        seed = int(time.time()) % 100000 + s
-        print(f"\n[SEED {s+1}/{args.seeds}] starting with seed={seed}...", flush=True)
+    for s, seed in enumerate(seed_values):
+        print(f"\n[SEED {s+1}/{len(seed_values)}] starting with seed={seed}...", flush=True)
         seed_start = time.time()
         
         results, elapsed = run_single_seed(
@@ -215,10 +253,10 @@ if __name__ == "__main__":
         seed_elapsed = time.time() - seed_start
         seed_hands = sum(r.hands_played for r in results)
         seed_hps = (seed_hands / seed_elapsed) if seed_elapsed > 0 else 0.0
-        remaining_seeds = args.seeds - (s + 1)
+        remaining_seeds = len(seed_values) - (s + 1)
         eta_sec = (seed_elapsed * remaining_seeds)
         print(
-            f"[SEED {s+1}/{args.seeds}] hands={seed_hands} time={seed_elapsed:.2f}s rate={seed_hps:,.0f} h/s ETA~{eta_sec/60:.1f}m",
+            f"[SEED {s+1}/{len(seed_values)}] hands={seed_hands} time={seed_elapsed:.2f}s rate={seed_hps:,.0f} h/s ETA~{eta_sec/60:.1f}m",
             flush=True,
         )
 
@@ -272,12 +310,18 @@ if __name__ == "__main__":
         b = p1_wins_by_rank[i] if i < len(p1_wins_by_rank) else 0
         print(f"  {name:16s}  A: {a} ({a/total_rank_A:.1%})   B: {b} ({b/total_rank_B:.1%})")
 
-    # Write outputs
+    # Write outputs under experiments/runs/
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_name = f"{args.botA}_vs_{args.botB}_{ts}"
     out_dir = Path(args.out)
+    if out_dir.name == "runs" or "runs" in out_dir.parts:
+        out_dir = out_dir / run_name
+    else:
+        out_dir = default_run_dir(f"{args.botA}_vs_{args.botB}")
     out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / f"v2_matches_{ts}.csv"
-    json_path = out_dir / f"v2_summary_{ts}.json"
+    csv_path = out_dir / "matches.csv"
+    json_path = out_dir / "summary.json"
+    manifest_copy = out_dir / "manifest_resolved.json"
 
     write_csv(
         str(csv_path),
@@ -291,12 +335,28 @@ if __name__ == "__main__":
             "bot_b": args.botB,
             "matches": args.matches,
             "hands": args.hands,
-            "seeds": args.seeds,
+            "hands_per_match": args.hands,
+            "seeds": seed_values,
             "stack": args.stack,
             "small_blind": args.sb,
             "big_blind": args.bb,
             "rollouts": args.rollouts,
         },
+        "provenance": build_provenance(
+            {
+                "name": run_name,
+                "bot_a": args.botA,
+                "bot_b": args.botB,
+                "matches": args.matches,
+                "hands_per_match": args.hands,
+                "seeds": seed_values,
+                "stack": args.stack,
+                "small_blind": args.sb,
+                "big_blind": args.bb,
+                "rollouts": args.rollouts,
+            },
+            output_paths=[csv_path],
+        ),
         "results": {
             "matches": matches_total,
             "match_wins_A": match_wins_p0,
@@ -324,6 +384,12 @@ if __name__ == "__main__":
 
     with open(json_path, "w") as f:
         json.dump(summary, f, indent=2)
+
+    resolved_manifest = summary["config"].copy()
+    resolved_manifest["schema_version"] = 1
+    resolved_manifest["name"] = run_name
+    with open(manifest_copy, "w") as f:
+        json.dump(resolved_manifest, f, indent=2)
 
     print("\n[SAVED]")
     print(f"  CSV:  {csv_path}")

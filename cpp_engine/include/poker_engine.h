@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -51,6 +52,9 @@ struct HandResult {
     std::vector<Action> p1_actions;
     int p0_showdown_rank = -1; // -1 if no showdown
     int p1_showdown_rank = -1; // -1 if no showdown
+    std::array<Card, 2> p0_hole = {255, 255};
+    std::array<Card, 2> p1_hole = {255, 255};
+    std::vector<Card> board;
 };
 
 /**
@@ -87,6 +91,7 @@ struct SimConfig {
     int initial_stack = 1000;
     int small_blind = 5;
     int big_blind = 10;
+    int max_raises_per_round = 3;
     uint64_t seed = 12345;
 };
 

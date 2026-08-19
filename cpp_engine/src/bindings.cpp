@@ -42,7 +42,10 @@ PYBIND11_MODULE(poker_engine, m) {
         .def_readwrite("p0_actions", &poker::HandResult::p0_actions)
         .def_readwrite("p1_actions", &poker::HandResult::p1_actions)
         .def_readwrite("p0_showdown_rank", &poker::HandResult::p0_showdown_rank)
-        .def_readwrite("p1_showdown_rank", &poker::HandResult::p1_showdown_rank);
+        .def_readwrite("p1_showdown_rank", &poker::HandResult::p1_showdown_rank)
+        .def_readwrite("p0_hole", &poker::HandResult::p0_hole)
+        .def_readwrite("p1_hole", &poker::HandResult::p1_hole)
+        .def_readwrite("board", &poker::HandResult::board);
     
     py::class_<poker::MatchResult>(m, "MatchResult")
         .def(py::init<>())
@@ -69,6 +72,7 @@ PYBIND11_MODULE(poker_engine, m) {
         .def_readwrite("initial_stack", &poker::SimConfig::initial_stack)
         .def_readwrite("small_blind", &poker::SimConfig::small_blind)
         .def_readwrite("big_blind", &poker::SimConfig::big_blind)
+        .def_readwrite("max_raises_per_round", &poker::SimConfig::max_raises_per_round)
         .def_readwrite("seed", &poker::SimConfig::seed);
     
     // Utility functions
@@ -152,6 +156,12 @@ PYBIND11_MODULE(poker_engine, m) {
     // Simulator
     py::class_<poker::Simulator>(m, "Simulator")
         .def(py::init<const poker::SimConfig&>())
+        .def("simulate_hand", &poker::Simulator::simulate_hand,
+             py::arg("bot0"),
+             py::arg("bot1"),
+             py::arg("stacks"),
+             py::arg("button"),
+             "Simulate a single hand between two bots")
         .def("simulate_match", &poker::Simulator::simulate_match,
              py::arg("bot0"),
              py::arg("bot1"),
