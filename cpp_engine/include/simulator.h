@@ -106,8 +106,12 @@ private:
     std::mt19937_64 rng_;
     
     // Internal simulation helpers
-    void deal_cards(std::array<Card, 2>& p0_cards, std::array<Card, 2>& p1_cards);
-    std::vector<Card> deal_board();
+    void deal_hand(
+        std::array<Card, 2>& p0_cards,
+        std::array<Card, 2>& p1_cards,
+        std::vector<Card>& board
+    );
+    void return_uncalled_bets(std::array<int, 2>& current_bets, std::array<int, 2>& stacks);
     int resolve_showdown(
         const std::array<Card, 2>& p0_cards,
         const std::array<Card, 2>& p1_cards,
@@ -123,7 +127,8 @@ private:
         int& pot,
         std::array<int, 2>& stacks,
         std::array<int, 2>& current_bets,
-        HandResult& hand_log
+        HandResult& hand_log,
+        int first_to_act
     );
 };
 

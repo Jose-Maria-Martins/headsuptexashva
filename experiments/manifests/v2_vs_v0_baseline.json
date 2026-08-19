@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "v2_vs_v0_baseline",
+  "description": "Monte Carlo (v2) vs Random (v0) — provisional until engine rerun",
+  "bot_a": "montecarlo",
+  "bot_b": "random",
+  "matches": 10,
+  "hands_per_match": 50,
+  "seeds": [1001, 1002, 1003, 1004, 1005],
+  "stack": 1000,
+  "small_blind": 10,
+  "big_blind": 20,
+  "rollouts": 300,
+  "strategy_path": "poker_ai/cfr/strategy.json"
+}

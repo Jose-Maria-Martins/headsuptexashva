@@ -92,7 +92,11 @@
     <script>
         function renderCards(containerId, cards) {
             const el = document.getElementById(containerId);
-            el.innerHTML = cards.map(c => `<span class="card">${c.rank}${c.suit}</span>`).join('');
+            el.innerHTML = cards.map(c => {
+                // Add suit-specific class for color
+                const suitClass = (c.suit === '♥' || c.suit === '♦') ? 'card-hearts card-diamonds' : 'card-spades card-clubs';
+                return `<span class="card ${suitClass}">${c.rank}${c.suit}</span>`;
+            }).join('');
         }
 
         let _lastHistoryLen = 0;
@@ -150,8 +154,10 @@
             document.getElementById('btn-fold').disabled = !yourTurn;
             const callBtn = document.getElementById('btn-call');
             callBtn.disabled = !yourTurn;
-            document.getElementById('btn-bet').disabled = !yourTurn;
-            document.getElementById('bet-size').disabled = !yourTurn;
+            const raiseBtn = document.getElementById('btn-bet');
+            const canRaise = yourTurn && (s.can_raise !== false);
+            raiseBtn.disabled = !canRaise;
+            document.getElementById('bet-size').disabled = !canRaise;
             document.getElementById('status-line').textContent = yourTurn ? 'Your turn' : (s.hand_over ? 'Hand over' : 'Bot thinking...');
             // Update Call/Check label to show payment
             if (s.to_call && s.to_call > 0) {

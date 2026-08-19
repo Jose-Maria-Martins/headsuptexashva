@@ -246,6 +246,7 @@ def _make_public_state(state):
         'current_bets': state.get('current_bets', [0, 0]),
         'to_call': to_call,
         'can_check': can_check,
+        'can_raise': state.get('raises', 0) < state.get('max_raises', 3),
         'human': hand_to_dicts(human_hole) if human_hole else [],
         'board': [card_to_dict(c) for c in board],
         'bot': hand_to_dicts(bot_hole_public) if bot_hole_public else [],
@@ -341,7 +342,6 @@ def _bot_step(state):
             _settle_to_pot(state)
             state['street'] = 'river'
             state['turn'] = 'human'
-            state['raises'] = 0
             state['history'].append("Both checked. Moving to river.")
             return True
         else:
@@ -370,7 +370,6 @@ def _bot_step(state):
             _settle_to_pot(state)
             state['street'] = 'river'
             state['turn'] = 'human'
-            state['raises'] = 0
             state['history'].append("Preflop equalized. Moving to river.")
         else:
             _settle_to_pot(state)
@@ -392,12 +391,98 @@ def _bot_step(state):
             state['pot'] = 0
         return True
     # bet/raise
+    if state.get('raises', 0) >= state.get('max_raises', 3):
+        # Raise cap reached: convert to call/check
+        if tc_bot > 0:
+            _apply_call(state, 1, tc_bot)
+            state['history'].append(f"Bot calls {tc_bot} (raise cap).")
+            if state['street'] == 'preflop':
+                _settle_to_pot(state)
+                state['street'] = 'river'
+                state['turn'] = 'human'
+                state['history'].append("Preflop equalized. Moving to river.")
+            else:
+                _settle_to_pot(state)
+                human_cards = list(state['human_hole']) + list(state['board'])
+                bot_cards = list(state['bot_hole']) + list(state['board'])
+                h_score = poker_engine.HandEvaluator.evaluate(human_cards)
+                b_score = poker_engine.HandEvaluator.evaluate(bot_cards)
+                if h_score > b_score:
+                    state['stacks'][0] += state['pot']
+                    state['history'].append("Showdown: You win.")
+                elif h_score < b_score:
+                    state['stacks'][1] += state['pot']
+                    state['history'].append("Showdown: Bot wins.")
+                else:
+                    state['stacks'][0] += state['pot'] // 2 + (state['pot'] % 2)
+                    state['stacks'][1] += state['pot'] // 2
+                    state['history'].append("Showdown: Split pot.")
+                state['hand_over'] = True
+                state['pot'] = 0
+        else:
+            # can check
+            if state['street'] == 'preflop':
+                _settle_to_pot(state)
+                state['street'] = 'river'
+                state['turn'] = 'human'
+                state['history'].append("Both checked (cap). Moving to river.")
+            else:
+                _settle_to_pot(state)
+                human_cards = list(state['human_hole']) + list(state['board'])
+                bot_cards = list(state['bot_hole']) + list(state['board'])
+                h_score = poker_engine.HandEvaluator.evaluate(human_cards)
+                b_score = poker_engine.HandEvaluator.evaluate(bot_cards)
+                if h_score > b_score:
+                    state['stacks'][0] += state['pot']
+                    state['history'].append("Showdown: You win.")
+                elif h_score < b_score:
+                    state['stacks'][1] += state['pot']
+                    state['history'].append("Showdown: Bot wins.")
+                else:
+                    state['stacks'][0] += state['pot'] // 2 + (state['pot'] % 2)
+                    state['stacks'][1] += state['pot'] // 2
+                    state['history'].append("Showdown: Split pot.")
+                state['hand_over'] = True
+                state['pot'] = 0
+        return True
     size = state['bot'].get_bet_size(pot_for_bot, state['stacks'][1])
     if size < 1:
         size = state['config'].big_blind
     min_raise = max(state['config'].big_blind, tc_bot + 1)
     desired_total = max(state['current_bets'][1] + tc_bot + size, state['current_bets'][1] + min_raise)
-    addl = min(desired_total - state['current_bets'][1], state['stacks'][1])
+    addl = min(max(desired_total - state['current_bets'][1], 0), state['stacks'][1])
+    if addl <= 0:
+        # Could not raise; fallback to call/check
+        if tc_bot > 0:
+            _apply_call(state, 1, tc_bot)
+            state['history'].append(f"Bot calls {tc_bot} (no raise possible).")
+        else:
+            state['history'].append("Bot checks (no raise possible).")
+        # handle street advancement similar to check/call paths
+        if state['street'] == 'preflop':
+            _settle_to_pot(state)
+            state['street'] = 'river'
+            state['turn'] = 'human'
+            state['history'].append("Preflop equalized. Moving to river.")
+        else:
+            _settle_to_pot(state)
+            human_cards = list(state['human_hole']) + list(state['board'])
+            bot_cards = list(state['bot_hole']) + list(state['board'])
+            h_score = poker_engine.HandEvaluator.evaluate(human_cards)
+            b_score = poker_engine.HandEvaluator.evaluate(bot_cards)
+            if h_score > b_score:
+                state['stacks'][0] += state['pot']
+                state['history'].append("Showdown: You win.")
+            elif h_score < b_score:
+                state['stacks'][1] += state['pot']
+                state['history'].append("Showdown: Bot wins.")
+            else:
+                state['stacks'][0] += state['pot'] // 2 + (state['pot'] % 2)
+                state['stacks'][1] += state['pot'] // 2
+                state['history'].append("Showdown: Split pot.")
+            state['hand_over'] = True
+            state['pot'] = 0
+        return True
     state['current_bets'][1] += addl
     state['stacks'][1] -= addl
     state['raises'] = state.get('raises', 0) + 1
@@ -482,7 +567,6 @@ def play_action():
                 _settle_to_pot(s)
                 s['street'] = 'river'
                 s['turn'] = 'human'
-                s['raises'] = 0
                 s['history'].append("Preflop equalized. Moving to river.")
                 return jsonify(_make_public_state(s))
             else:
@@ -505,29 +589,41 @@ def play_action():
                 s['pot'] = 0
                 return jsonify(_make_public_state(s))
     elif action == 'bet':
-        # Validate bet/raise
-        # Use big blind as baseline min raise increment
-        min_raise = max(s['config'].big_blind, tc + 1)
-        bet_total = s['current_bets'][0] + tc + bet_size
-        desired_total = max(bet_total, s['current_bets'][0] + min_raise)
-        addl = min(desired_total - s['current_bets'][0], s['stacks'][0])
-        s['current_bets'][0] += addl
-        s['stacks'][0] -= addl
-        s['raises'] += 1
-        s['history'].append(f"You bet/raise to {s['current_bets'][0]}.")
+        # Validate bet/raise with cap and safety fallbacks
+        if s['raises'] >= s['max_raises']:
+            # Convert to call/check when cap reached
+            if tc > 0:
+                _apply_call(s, 0, tc)
+                s['history'].append(f"You call {tc} (raise cap).")
+            else:
+                s['history'].append("You check (raise cap).")
+        else:
+            # Use big blind as baseline min raise increment
+            min_raise = max(s['config'].big_blind, tc + 1)
+            bet_total = s['current_bets'][0] + tc + bet_size
+            desired_total = max(bet_total, s['current_bets'][0] + min_raise)
+            addl = min(max(desired_total - s['current_bets'][0], 0), s['stacks'][0])
+            if addl <= 0:
+                if tc > 0:
+                    _apply_call(s, 0, tc)
+                    s['history'].append(f"You call {tc} (no raise possible).")
+                else:
+                    s['history'].append("You check (no raise possible).")
+            else:
+                s['current_bets'][0] += addl
+                s['stacks'][0] -= addl
+                s['raises'] += 1
+                s['history'].append(f"You bet/raise to {s['current_bets'][0]}.")
 
     # After human action, switch turn to bot and run bot until next human turn or hand over
     s['turn'] = 'bot'
 
-    # Bot loop with cap
-    raises_in_round = s['raises']
-    last_raiser = 0 if action == 'bet' else -1
+    # Bot loop: always allow bot to respond (even at raise cap, it will call/check)
     actions_this_round = 0
-
-    while raises_in_round < s['max_raises'] and actions_this_round < 20 and not s.get('hand_over'):
+    while s.get('turn') == 'bot' and actions_this_round < 20 and not s.get('hand_over'):
         actions_this_round += 1
-        if _bot_step(s):
-            # If bot bet/raised, s['turn'] is set to human in _bot_step
+        progressed = _bot_step(s)
+        if not progressed:
             break
 
     # Fallback: if loop ended without action, resolve equality/advance or hand control back to human
@@ -537,7 +633,6 @@ def play_action():
                 _settle_to_pot(s)
                 s['street'] = 'river'
                 s['turn'] = 'human'
-                s['raises'] = 0
                 s['history'].append("Preflop equalized. Moving to river.")
             else:
                 _settle_to_pot(s)
