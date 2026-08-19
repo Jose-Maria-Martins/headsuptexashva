@@ -71,14 +71,20 @@ def resolve_seeds(manifest: dict[str, Any]) -> list[int]:
     raise ValueError("Manifest must include 'seeds' or 'seed_list_file'")
 
 
-def build_provenance(manifest: dict[str, Any], output_paths: list[Path] | None = None) -> dict[str, Any]:
+def build_provenance(
+    manifest: dict[str, Any], output_paths: list[Path] | None = None
+) -> dict[str, Any]:
     root = repo_root()
     prov = {
         "manifest": manifest.get("_manifest_path"),
         "manifest_name": manifest.get("name"),
         "git": git_revision(root),
         "runtime": runtime_metadata(),
-        "config": {k: manifest[k] for k in manifest if not k.startswith("_") and k != "schema_version"},
+        "config": {
+            k: manifest[k]
+            for k in manifest
+            if not k.startswith("_") and k != "schema_version"
+        },
     }
     if output_paths:
         prov["output_hashes"] = {str(p): file_sha256(p) for p in output_paths if p.exists()}

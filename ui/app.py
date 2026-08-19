@@ -4,27 +4,33 @@ Flask UI for Poker AI - MVP
 Provides Bot vs Bot and Human vs Bot gameplay visualization.
 """
 
-from flask import Flask, render_template, jsonify, request
-import sys
-from pathlib import Path
 import random
+import sys
 import time
-import threading
+from pathlib import Path
+
+from flask import Flask, jsonify, render_template, request
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
 try:
     from poker_ai import poker_engine
-    from poker_ai.bots.random_bot import RandomBot
     from poker_ai.bots.hand_strength_bot import HandStrengthBot
+    from poker_ai.bots.mccfr_bot import MCCFRBot
     from poker_ai.bots.monte_carlo_bot import MonteCarloBot
+    from poker_ai.bots.random_bot import RandomBot
     
     ENGINE_AVAILABLE = True
 except ImportError:
     ENGINE_AVAILABLE = False
 
-app = Flask(__name__)
+APP_DIR = Path(__file__).resolve().parent
+app = Flask(
+    __name__,
+    template_folder=str(APP_DIR / "templates"),
+    static_folder=str(APP_DIR / "static"),
+)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 # Game state storage
@@ -53,6 +59,9 @@ def create_bot(bot_type, seed=0):
         return WrappedBot(HandStrengthBot(seed))
     elif bot_type == "v2" or bot_type == "montecarlo":
         return WrappedBot(MonteCarloBot(seed, rollouts=200))
+    elif bot_type == "v3" or bot_type == "mccfr":
+        strategy_path = Path(__file__).parent.parent / "poker_ai" / "cfr" / "strategy.json"
+        return WrappedBot(MCCFRBot(str(strategy_path), player_id=0, seed=seed))
     else:
         raise ValueError(f"Unknown bot type: {bot_type}")
 
@@ -151,7 +160,6 @@ def bot_vs_bot_next():
     
     # Calculate progress percentage
     hands_shown = min(bot_vs_bot_state['current_hand'], result.hands_played)
-    progress = hands_shown / result.hands_played if result.hands_played > 0 else 1.0
     finished = bot_vs_bot_state['current_hand'] >= result.hands_played
     
     # Use actual data, not interpolation (interpolation was misleading)
@@ -320,7 +328,9 @@ def _bot_step(state):
     hole = state['bot_hole']
     board = [] if state['street'] == 'preflop' else state['board']
     pot_for_bot = state['pot'] + sum(state['current_bets'])
-    bot_action = state['bot'].get_action(hole, board, pot_for_bot, tc_bot, state['stacks'][1], can_check_bot)
+    bot_action = state['bot'].get_action(
+        hole, board, pot_for_bot, tc_bot, state['stacks'][1], can_check_bot
+    )
 
     if bot_action == poker_engine.Action.FOLD:
         _settle_to_pot(state)
@@ -449,7 +459,10 @@ def _bot_step(state):
     if size < 1:
         size = state['config'].big_blind
     min_raise = max(state['config'].big_blind, tc_bot + 1)
-    desired_total = max(state['current_bets'][1] + tc_bot + size, state['current_bets'][1] + min_raise)
+    desired_total = max(
+        state['current_bets'][1] + tc_bot + size,
+        state['current_bets'][1] + min_raise,
+    )
     addl = min(max(desired_total - state['current_bets'][1], 0), state['stacks'][1])
     if addl <= 0:
         # Could not raise; fallback to call/check
@@ -548,8 +561,6 @@ def play_action():
 
     # Compute to_call and can_check
     tc = to_call_for('human')
-    can_check = (tc == 0)
-
     if action == 'fold':
         _settle_to_pot(s)
         winner = 1  # bot wins
@@ -668,4 +679,3 @@ if __name__ == '__main__':
     print("=" * 80)
     
     app.run(debug=True, host='0.0.0.0', port=5000)
-

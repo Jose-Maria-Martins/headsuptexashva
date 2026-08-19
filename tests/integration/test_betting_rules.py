@@ -47,7 +47,14 @@ class TestBettingOutcomes:
             AlwaysFoldBot(), AlwaysCallBot(), stacks, button=0
         )
         assert result.winner == 1
-        assert stacks[1] > cfg.initial_stack
+        assert result.pot_size == cfg.small_blind + cfg.big_blind
+
+        # simulate_hand receives a converted copy of the stack array through
+        # pybind11; verify the actual payout through the match API instead.
+        match = poker_engine.Simulator(cfg).simulate_match(
+            AlwaysFoldBot(), AlwaysCallBot(), num_hands=1
+        )
+        assert match.p1_final_stack > cfg.initial_stack
 
     def test_showdown_produces_rank_fields(self):
         cfg = make_config(seed=12)

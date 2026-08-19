@@ -19,21 +19,37 @@ class GameState:
     Two-round model: preflop + postflop (all 5 cards at once).
     """
     
-    def __init__(self, stack: int = 1000, sb: int = 10, bb: int = 20):
+    def __init__(
+        self,
+        stack: int = 1000,
+        sb: int = 10,
+        bb: int = 20,
+        rng: Optional[random.Random] = None,
+        cards: Optional[Tuple[List[int], List[int], List[int]]] = None,
+    ):
         """Initialize a new hand."""
         self.initial_stack = stack
         self.sb = sb
         self.bb = bb
+        self.rng = rng or random.Random()
         
         # Deal cards
-        deck = list(range(52))
-        random.shuffle(deck)
-        self.p0_cards = deck[0:2]
-        self.p1_cards = deck[2:4]
-        self.board = deck[4:9]
+        if cards is None:
+            deck = list(range(52))
+            self.rng.shuffle(deck)
+            self.p0_cards = deck[0:2]
+            self.p1_cards = deck[2:4]
+            self.board = deck[4:9]
+        else:
+            self.p0_cards, self.p1_cards, self.board = (
+                cards[0].copy(),
+                cards[1].copy(),
+                cards[2].copy(),
+            )
         
         # State
         self.round = 0  # 0=preflop, 1=postflop
+        self.current_player = 0  # Seat 0 (small blind) acts first preflop
         self.pot = sb + bb
         self.p0_invested = sb
         self.p1_invested = bb
@@ -50,8 +66,8 @@ class GameState:
         return self.is_over
     
     def get_current_player(self) -> int:
-        """Who acts next (based on history length)."""
-        return len(self.history) % 2
+        """Return the seat that acts next."""
+        return self.current_player
     
     def apply_action(self, action: int, bet_size: float):
         """Apply an action and update state."""
@@ -79,10 +95,13 @@ class GameState:
                     # Move to postflop
                     self.round = 1
                     self.history = ""
+                    self.current_player = 1  # Big blind acts first postflop
                     self.num_raises_this_round = 0  # Reset for new round
                 else:
                     # Postflop complete
                     self.is_over = True
+            else:
+                self.current_player = 1 - player
                     
         elif action in [ActionAbstraction.BET_HALF, ActionAbstraction.BET_POT]:
             self.history += 'b'
@@ -94,6 +113,7 @@ class GameState:
             else:
                 self.p1_invested += bet_size
                 self.pot += bet_size
+            self.current_player = 1 - player
     
     def get_payoff(self, player: int) -> float:
         """
@@ -132,7 +152,13 @@ class MCCFRTrainer:
     Uses external sampling (outcome sampling variant) for efficiency.
     """
     
-    def __init__(self, stack: int = 1000, sb: int = 10, bb: int = 20):
+    def __init__(
+        self,
+        stack: int = 1000,
+        sb: int = 10,
+        bb: int = 20,
+        seed: int = 12345,
+    ):
         """
         Initialize CFR trainer.
         
@@ -144,6 +170,7 @@ class MCCFRTrainer:
         self.stack = stack
         self.sb = sb
         self.bb = bb
+        self.rng = random.Random(seed)
         
         self.infoset_manager = InfoSetManager()
         self.iteration = 0
@@ -160,7 +187,7 @@ class MCCFRTrainer:
             self.iteration += 1
             
             # Create new random game
-            state = GameState(self.stack, self.sb, self.bb)
+            state = GameState(self.stack, self.sb, self.bb, rng=self.rng)
             
             # Traverse for both players
             for player in [0, 1]:
@@ -269,11 +296,15 @@ class MCCFRTrainer:
     
     def _copy_state(self, state: GameState) -> GameState:
         """Create a copy of game state."""
-        new_state = GameState(self.stack, self.sb, self.bb)
-        new_state.p0_cards = state.p0_cards.copy()
-        new_state.p1_cards = state.p1_cards.copy()
-        new_state.board = state.board.copy()
+        new_state = GameState(
+            self.stack,
+            self.sb,
+            self.bb,
+            rng=self.rng,
+            cards=(state.p0_cards, state.p1_cards, state.board),
+        )
         new_state.round = state.round
+        new_state.current_player = state.current_player
         new_state.pot = state.pot
         new_state.p0_invested = state.p0_invested
         new_state.p1_invested = state.p1_invested
@@ -285,7 +316,7 @@ class MCCFRTrainer:
     def _train_against_v2(self, v2_opponent):
         """Train one iteration against V2 opponent instead of self-play."""
         # Create a new game state
-        state = GameState(self.stack, self.sb, self.bb)
+        state = GameState(self.stack, self.sb, self.bb, rng=self.rng)
         
         # Play the hand against V2
         self._play_hand_against_v2(state, v2_opponent)
@@ -342,8 +373,7 @@ class MCCFRTrainer:
         strategy = infoset.get_strategy()
         
         # Sample action
-        action_idx = np.random.choice(len(legal_actions), p=strategy)
-        return legal_actions[action_idx]
+        return self.rng.choices(legal_actions, weights=strategy, k=1)[0]
     
     def _get_v2_action(self, state: GameState, player: int, v2_opponent, to_call: int):
         """Get action using V2 strategy."""
@@ -410,4 +440,3 @@ class MCCFRTrainer:
         """Load trained strategy from file."""
         self.infoset_manager.load(filepath)
         print(f"Loaded strategy with {self.infoset_manager.get_num_infosets()} infosets from {filepath}")
-

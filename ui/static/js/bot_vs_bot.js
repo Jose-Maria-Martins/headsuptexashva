@@ -10,7 +10,9 @@ const botNames = {
     'v1': 'V1 - Hand Strength',
     'handstrength': 'V1 - Hand Strength',
     'v2': 'V2 - Monte Carlo',
-    'montecarlo': 'V2 - Monte Carlo'
+    'montecarlo': 'V2 - Monte Carlo',
+    'v3': 'V3 - Experimental CFR',
+    'mccfr': 'V3 - Experimental CFR'
 };
 
 function startMatch() {

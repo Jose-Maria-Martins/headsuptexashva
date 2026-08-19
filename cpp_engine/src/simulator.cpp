@@ -111,13 +111,11 @@ int Simulator::simulate_betting_round(
         actions_this_round++;
 
         if (action == Action::FOLD) {
-            return_uncalled_bets(current_bets, stacks);
             pot += current_bets[0] + current_bets[1];
             return 1 - current_player;
         }
         if (action == Action::CHECK) {
             if (to_call > 0) {
-                return_uncalled_bets(current_bets, stacks);
                 pot += current_bets[0] + current_bets[1];
                 return 1 - current_player;
             }
@@ -155,8 +153,6 @@ int Simulator::simulate_betting_round(
             }
         }
 
-        return_uncalled_bets(current_bets, stacks);
-
         if (both_all_in()) {
             break;
         }
@@ -190,6 +186,8 @@ HandResult Simulator::simulate_hand(
     std::array<int, 2>& stacks,
     int button
 ) {
+    (void)button; // The caller swaps seats before invoking this hand simulation.
+
     HandResult result;
     result.hands_played = 1;
     result.winner = -1;
@@ -400,4 +398,3 @@ std::vector<MatchResult> Simulator::simulate_batch(
 }
 
 } // namespace poker
-

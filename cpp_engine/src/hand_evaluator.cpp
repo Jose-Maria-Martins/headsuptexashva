@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <map>
 #include <random>
+#include <stdexcept>
 
 namespace poker {
 
@@ -177,6 +178,10 @@ double EquityCalculator::calculate_equity(
     int iterations,
     uint64_t seed
 ) {
+    if (num_opponents != 1) {
+        throw std::invalid_argument("Heads-up equity supports exactly one opponent");
+    }
+
     std::mt19937_64 rng(seed);
     
     // Build deck of remaining cards
