@@ -93,7 +93,7 @@ Open http://localhost:5000 — research demo only; debug mode must stay local.
 | v0 | Random         | Uniform random legal actions                     |
 | v1 | HandStrength   | Preflop/table-strength heuristic                   |
 | v2 | MonteCarlo     | Monte Carlo equity + threshold policy            |
-| v3 | MCCFR          | Preliminary CFR on abstracted game (not validated)|
+| v3 | Experimental CFR | Small tabular CFR policy; not a GTO claim      |
 
 See [docs/game-rules.md](docs/game-rules.md) for the exact simplified rules under test.
 

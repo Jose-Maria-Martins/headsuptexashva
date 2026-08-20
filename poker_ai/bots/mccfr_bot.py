@@ -7,13 +7,14 @@ from poker_ai.cfr import CardAbstraction, ActionAbstraction, InfoSetManager, bui
 
 class MCCFRBot:
     """
-    Bot that uses MCCFR-trained strategy for near-GTO play.
+    Experimental bot that uses a tabular CFR-trained strategy.
     
     This bot:
     - Queries a trained strategy blueprint
     - Uses card abstraction to bucket hands
     - Maps abstract actions to concrete bet sizes
-    - Plays according to Nash equilibrium approximation
+    - Plays according to a learned strategy table when an information set exists
+    - Falls back to a uniform legal policy for unseen information sets
     """
     
     def __init__(self, strategy_path: str, player_id: int = 0, seed: Optional[int] = None):
@@ -26,7 +27,7 @@ class MCCFRBot:
             seed: Random seed for action sampling
         """
         self.player_id = player_id
-        self.rng = np.random.RandomState(seed if seed is not None else 42)
+        self.rng = np.random.default_rng(seed if seed is not None else 42)
         self.name = "MCCFRBot"
         
         # Load trained strategy
@@ -81,7 +82,13 @@ class MCCFRBot:
             round_num = 1  # Postflop
         
         # Update round tracking
-        if round_num != self.current_round:
+        # A fold can end a hand before the postflop round is reached. Reset the
+        # action history at the next preflop decision so it cannot leak across
+        # hands when the caller does not expose an explicit hand boundary.
+        if (
+            round_num != self.current_round
+            or (round_num == 0 and self.current_history.endswith("f"))
+        ):
             self.current_round = round_num
             self.current_history = ""  # Reset history for new round
         
@@ -180,4 +187,3 @@ class MCCFRBot:
         bet_size = min(bet_size, stack)
         
         return int(bet_size)
-

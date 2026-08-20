@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from tests.conftest import make_config, poker_engine, requires_engine, total_chips
+from tests.conftest import make_config, poker_engine, requires_engine
 from tests.helpers.bots import AlwaysCallBot, AlwaysCheckBot, AlwaysFoldBot
 
 

@@ -34,6 +34,9 @@ execute_process(
 )
 
 if(pybind11_FIND_RESULT EQUAL 0)
+    # Some pybind11 versions quote the path when invoked through a Windows
+    # environment. Remove those quotes before passing the directory to CMake.
+    string(REPLACE "\"" "" pybind11_CMAKE_DIR "${pybind11_CMAKE_DIR}")
     message(STATUS "Found pybind11 cmake dir: ${pybind11_CMAKE_DIR}")
     set(pybind11_DIR "${pybind11_CMAKE_DIR}")
     find_package(pybind11 CONFIG REQUIRED)
@@ -63,6 +66,24 @@ pybind11_add_module(poker_engine ${SOURCES})
 set_target_properties(poker_engine PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/poker_ai"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/poker_ai"
+)
+
+# Visual Studio is a multi-config generator and otherwise appends the
+# configuration name (for example, `Release`) to the output directory.
+# Keep the importable extension at poker_ai/poker_engine.pyd on every config.
+foreach(config Debug Release RelWithDebInfo MinSizeRel)
+    set_target_properties(poker_engine PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_${config} "${CMAKE_CURRENT_SOURCE_DIR}/poker_ai"
+        RUNTIME_OUTPUT_DIRECTORY_${config} "${CMAKE_CURRENT_SOURCE_DIR}/poker_ai"
+    )
+endforeach()
+
+# Keep a stable import location even when a multi-config generator places the
+# build artifact in a configuration-specific directory.
+add_custom_command(TARGET poker_engine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:poker_engine>"
+        "${CMAKE_CURRENT_SOURCE_DIR}/poker_ai/$<TARGET_FILE_NAME:poker_engine>"
 )
 
 # Platform-specific settings

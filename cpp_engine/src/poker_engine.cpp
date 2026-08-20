@@ -1,4 +1,5 @@
 #include "poker_engine.h"
+#include <cctype>
 #include <sstream>
 
 namespace poker {
@@ -22,7 +23,7 @@ Card string_to_card(const std::string& str) {
     }
     
     // Parse rank
-    char rank_char = std::toupper(str[0]);
+    char rank_char = static_cast<char>(std::toupper(static_cast<unsigned char>(str[0])));
     int rank = -1;
     
     if (rank_char >= '2' && rank_char <= '9') {
@@ -42,7 +43,7 @@ Card string_to_card(const std::string& str) {
     }
     
     // Parse suit
-    char suit_char = std::tolower(str[1]);
+    char suit_char = static_cast<char>(std::tolower(static_cast<unsigned char>(str[1])));
     int suit = -1;
     
     if (suit_char == 'c') {

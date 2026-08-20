@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from experiments.manifest_utils import load_manifest, resolve_seeds
