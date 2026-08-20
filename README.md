@@ -101,6 +101,8 @@ See [docs/game-rules.md](docs/game-rules.md) for the exact simplified rules unde
 
 - [Game rules](docs/game-rules.md) — canonical engine specification
 - [Reproducibility](docs/reproducibility.md) — manifests, seeds, provenance
+- [Original R&D Poker PDF](docs/r-and-d-poker.pdf) — preserved project artifact
+- [PDF status](docs/r-and-d-poker-status.md) — why its historical results are provisional
 - [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) — engineering roadmap
 
 ## Status
