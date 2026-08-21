@@ -80,7 +80,7 @@ Tests skip automatically if `poker_engine` is not built.
 ### 4. Run an experiment from a manifest
 
 ```bash
-python experiments/test_cpp_v2_bot.py --manifest experiments/manifests/v2_vs_v0_baseline.json
+python experiments/run_benchmark.py --manifest experiments/manifests/v2_vs_v0_baseline.json
 ```
 
 Outputs are written to `experiments/runs/<name>_<timestamp>/` (git-ignored) with:
@@ -92,7 +92,7 @@ Outputs are written to `experiments/runs/<name>_<timestamp>/` (git-ignored) with
 Replay:
 
 ```bash
-python experiments/test_cpp_v2_bot.py --replay experiments/runs/<run>/summary.json
+python experiments/run_benchmark.py --replay experiments/runs/<run>/summary.json
 ```
 
 ### 5. Web demo (local)
