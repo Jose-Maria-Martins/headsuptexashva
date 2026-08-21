@@ -63,12 +63,14 @@ instance/
 
 # Data & experiment outputs (keep manifests/reports; ignore raw runs)
 experiments/runs/
+experiments/*.json
 experiments/*_matches_*.csv
 experiments/*_hands_*.csv
 experiments/*_raw_*.json
 experiments/v2_summary_*.json
 experiments/v2_matches_*.csv
 *.tmp
+tmp/
 
 # Simple build output
 build_simple/

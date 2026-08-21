@@ -8,7 +8,6 @@ version = "0.2.0"
 description = "Educational heads-up poker simulation and bot benchmarking (research demo)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
 authors = [{ name = "Heads-Up Poker Research Project" }]
 dependencies = [
     "numpy>=1.24",

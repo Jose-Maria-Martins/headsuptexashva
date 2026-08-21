@@ -1,8 +1,25 @@
-# Heads-Up Poker — Research Simulation
+# Heads-Up Poker - Research Simulation
 
 Educational R&D project in **adversarial decision-making under uncertainty**. This repository simulates a simplified heads-up poker environment for comparing bot policies (random, hand-strength heuristic, Monte Carlo equity, preliminary MCCFR).
 
 > **Disclaimer:** This is **not** a trading system, financial alpha, or production poker product. Historical experiment summaries are **provisional** until the corrected engine is rebuilt and benchmarks are rerun from versioned manifests.
+
+## Why heads-up poker?
+
+Heads-up poker is a compact environment for studying adversarial decisions
+under uncertainty. With only two players, it is easier to inspect action order,
+position, bankroll changes, and strategy interactions than in a full table.
+The project is an engineering and modelling exercise; poker performance does
+not imply financial-market skill or alpha.
+
+## Why this simplified game?
+
+The engine intentionally uses two betting rounds: a preflop round and one
+postflop round that reveals the complete five-card board. This keeps the state
+space and runtime small enough for repeatable experiments on a normal laptop,
+while retaining hidden information, betting pressure, position, and showdown
+uncertainty. It is not full no-limit Hold'em and results must be interpreted
+only within these documented rules.
 
 ## Architecture
 
@@ -97,23 +114,37 @@ Open http://localhost:5000 — research demo only; debug mode must stay local.
 
 See [docs/game-rules.md](docs/game-rules.md) for the exact simplified rules under test.
 
+To add a new policy, start with [docs/bot-template.py](docs/bot-template.py)
+and follow the hierarchy and standards in [docs/code-standards.md](docs/code-standards.md).
+
 ## Documentation
 
 - [Game rules](docs/game-rules.md) — canonical engine specification
 - [Reproducibility](docs/reproducibility.md) — manifests, seeds, provenance
+- [Code hierarchy and standards](docs/code-standards.md) — where code belongs and how to extend it
+- [Bot template](docs/bot-template.py) — starting point for a new policy
+- [Benchmark status](docs/benchmark-status.md) — latest seeded controls and limitations
 - [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) — engineering roadmap
+
+## Resource and time limitations
+
+The project is deliberately sized for local research rather than a compute
+cluster. Monte Carlo rollouts are CPU-bound, native builds require a C++ toolchain,
+and large benchmarks can take minutes or hours depending on rollout count and
+hardware. Results therefore report actual hands and runtime, and should not be
+compared with production-scale poker solvers. The simplified game and smaller
+experiments are engineering trade-offs for reproducibility and explainability.
 
 ## Status
 
-Priority 0 correctness work is in progress:
+Current status:
 
 - Single-deck dealing (nine unique cards per hand)
 - Postflop BB-first action order
 - Per-street raise cap and all-in refunds
-- pytest suite and manifest-based experiments
+- 31-test pytest suite and manifest-based experiments
+- larger mirror and seat-swapped benchmark matrix completed locally
+- v3 remains experimental; toy-game validation is exploratory and does not yet
+  justify a full Hold'em CFR claim
 
 **Do not cite paper headline numbers** until experiments are regenerated after these fixes.
-
-## License
-
-MIT — see LICENSE (to be added).
