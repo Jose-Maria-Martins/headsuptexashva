@@ -1,8 +1,17 @@
-# Heads-Up Poker - Research Simulation
+# Heads-Up Poker - Reproducible Bot Research
 
-Educational R&D project in **adversarial decision-making under uncertainty**. This repository simulates a simplified heads-up poker environment for comparing bot policies (random, hand-strength heuristic, Monte Carlo equity, preliminary MCCFR).
+Educational R&D project in **adversarial decision-making under uncertainty**.
+It contains a small C++ poker engine, Python bot policies, reproducible
+benchmarks, and a local Flask demonstration.
 
-> **Disclaimer:** This is **not** a trading system, financial alpha, or production poker product. Historical experiment summaries are **provisional** until the corrected engine is rebuilt and benchmarks are rerun from versioned manifests.
+## Academic context
+
+This project was developed during an exchange at **Hogeschool van Amsterdam
+(HvA)** in **Fall 2025**. It is presented here as a research-engineering
+project: the focus is on simulation design, reproducibility, testing, and
+decision-making under uncertainty.
+
+> **Scope:** This is **not** a trading system, financial-alpha claim, or production poker product. The bots are evaluated only in the simplified game documented below.
 
 ## Why heads-up poker?
 
@@ -75,7 +84,8 @@ python -c "from poker_ai import poker_engine; print(poker_engine.__version__)"
 pytest
 ```
 
-Tests skip automatically if `poker_engine` is not built.
+The full suite currently contains 33 tests. Integration tests that require the
+native extension are skipped when it has not been built.
 
 ### 4. Run an experiment from a manifest
 
@@ -124,7 +134,7 @@ and follow the hierarchy and standards in [docs/code-standards.md](docs/code-sta
 - [Code hierarchy and standards](docs/code-standards.md) — where code belongs and how to extend it
 - [Bot template](docs/bot-template.py) — starting point for a new policy
 - [Benchmark status](docs/benchmark-status.md) — latest seeded controls and limitations
-- [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) — engineering roadmap
+- [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) — engineering roadmap and future work
 
 ## Resource and time limitations
 
@@ -142,9 +152,11 @@ Current status:
 - Single-deck dealing (nine unique cards per hand)
 - Postflop BB-first action order
 - Per-street raise cap and all-in refunds
-- 31-test pytest suite and manifest-based experiments
+- 33-test pytest suite and manifest-based experiments
 - larger mirror and seat-swapped benchmark matrix completed locally
 - v3 remains experimental; toy-game validation is exploratory and does not yet
   justify a full Hold'em CFR claim
 
-**Do not cite paper headline numbers** until experiments are regenerated after these fixes.
+The benchmark report is current for the checked-in code, but results remain
+specific to this simplified game and should not be presented as evidence of
+full Hold'em strength or financial performance.
