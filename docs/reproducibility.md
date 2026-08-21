@@ -32,19 +32,19 @@ Alternatively, `"seed_list_file": "experiments/manifests/seeds.txt"` may referen
 Run from manifest:
 
 ```bash
-python experiments/test_cpp_v2_bot.py --manifest experiments/manifests/v2_vs_v0_baseline.json
+python experiments/run_benchmark.py --manifest experiments/manifests/v2_vs_v0_baseline.json
 ```
 
 Explicit seed list (CLI override):
 
 ```bash
-python experiments/test_cpp_v2_bot.py --seed-list 42,43,44 --matches 10 --hands 50
+python experiments/run_benchmark.py --seed-list 42,43,44 --matches 10 --hands 50
 ```
 
 Replay prior run:
 
 ```bash
-python experiments/test_cpp_v2_bot.py --replay experiments/runs/<run>/summary.json
+python experiments/run_benchmark.py --replay experiments/runs/<run>/summary.json
 ```
 
 ## Hand-count arithmetic

@@ -54,7 +54,7 @@ Create a concise `docs/game-rules.md` before changing behaviour. It should defin
 
 ### 3. Reproducibility is not implemented end-to-end
 
-`experiments/test_cpp_v2_bot.py` derives seeds from the current wall-clock time. That makes exact reruns impossible despite the paper's reproducibility claims.
+The benchmark runner must use explicit seed manifests rather than wall-clock seeds. The current runner is `experiments/run_benchmark.py`.
 
 Required change:
 
@@ -167,7 +167,7 @@ For v3/CFR:
 
 ## Testing strategy
 
-There is currently no structured automated test suite or CI workflow. The existing `experiments/test_cpp_v2_bot.py` is an experiment runner, not a test suite.
+The benchmark runner is not a test suite; structured automated tests live under `tests/`.
 
 ### Unit tests
 
@@ -244,8 +244,8 @@ The existing `.gitignore` is a useful start but needs a deliberate artifact poli
 - Ignore `experiments/runs/`, raw hand logs, large CSV files, transient JSON summaries, coverage, native modules, build trees, local environments, and editor files.
 - Use a separate artifact location or release attachment for large reproducible result sets.
 - Add `.gitattributes` for consistent line endings and binary-file treatment.
-- Remove `cpp_engine/src/simulator.cpp.backup` after confirming it has no unique value.
-- Add `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, a pull-request template, and optionally `CODEOWNERS`.
+- Archive `cpp_engine/src/simulator.cpp.backup` after confirming it has no unique value.
+- Keep `SECURITY.md`, `CONTRIBUTING.md`, a pull-request template, and optionally `CODEOWNERS`.
 - Use professional, descriptive commits such as `fix(engine): deal all cards from one deck` rather than informal history messages.
 - Do not rewrite public history solely for appearance; improve all new commits and documentation.
 

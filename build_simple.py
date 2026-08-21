@@ -178,4 +178,4 @@ if __name__ == "__main__":
         print("Run: python verify_install.py")
     else:
         print("\n[FALLBACK] Use Python-only mode")
-        print("Run: python experiments/run_experiment.py")
+        print("Run: python experiments/run_benchmark.py")

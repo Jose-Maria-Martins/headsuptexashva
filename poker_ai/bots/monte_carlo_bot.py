@@ -24,8 +24,8 @@ class MonteCarloBot:
                  aggression_k2: float = 0.02, 
                  semi_bluff_freq: float = 0.25,
                  position_adjustment: float = 0.02,
-                 preflop_raise_threshold: float = 0.30,
-                 preflop_call_threshold: float = 0.15,
+                 preflop_raise_threshold: float = 0.65,
+                 preflop_call_threshold: float = 0.40,
                  opponent_tightness: float = 0.5,  
                  board_texture_awareness: bool = True):
         """
@@ -40,8 +40,8 @@ class MonteCarloBot:
             aggression_k2: Coefficient for pot pressure effect on aggression
             semi_bluff_freq: Frequency of semi-bluffing when draw detected
             position_adjustment: Threshold adjustment for position (acting last)
-            preflop_raise_threshold: Preflop raise threshold (reuse V1 logic)
-            preflop_call_threshold: Preflop call threshold (reuse V1 logic)
+            preflop_raise_threshold: Minimum normalized preflop strength to raise
+            preflop_call_threshold: Minimum normalized preflop strength to call
             opponent_tightness: 0 = loose (be more selective), 1 = tight (be more aggressive). 
         """
         self.rng = random.Random(seed)
@@ -316,7 +316,23 @@ class MonteCarloBot:
         adjusted_equity = equity + position_bonus
         # Remember for bet sizing
         self._last_equity = max(0.0, min(1.0, adjusted_equity))
-        
+
+        # Preflop uses its own calibrated heuristic.  Do not apply postflop
+        # pot-odds thresholds to a hand whose equity has not been simulated.
+        if len(board) == 0:
+            strength = self._last_equity
+            if to_call > 0:
+                if strength >= self.preflop_raise_threshold:
+                    return poker_engine.Action.RAISE
+                if strength >= self.preflop_call_threshold:
+                    return poker_engine.Action.CALL
+                return poker_engine.Action.FOLD
+            return (
+                poker_engine.Action.BET
+                if strength >= self.preflop_raise_threshold
+                else poker_engine.Action.CHECK
+            )
+
         if to_call > 0:
             # Facing a bet: use pot odds with safety floors
             price = to_call / (pot + to_call) if pot > 0 else 0

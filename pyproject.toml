@@ -5,10 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "heads-up-poker"
 version = "0.2.0"
-description = "Educational heads-up poker simulation and bot benchmarking (research demo)"
+description = "Reproducible heads-up poker bot research project from an HvA exchange in Fall 2025"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
 authors = [{ name = "Heads-Up Poker Research Project" }]
 dependencies = [
     "numpy>=1.24",
