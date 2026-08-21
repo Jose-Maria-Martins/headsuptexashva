@@ -38,3 +38,9 @@ approximately 0.058 for Kuhn and 0.091 for Leduc. This is useful as a
 diagnostic, but it is not yet a formal exploitability validation against
 reference equilibria. v3 should remain labelled experimental until that
 validation is improved.
+
+A separate 20,000-iteration Hold'em-style strategy produced 42,648
+information sets and scored 3/50 match wins against v2 on the fixed smoke
+configuration (95% interval 2.1%-16.2%). More training alone is therefore not
+enough evidence of improvement; abstraction quality, state transitions, and
+toy-game validation need attention first.
