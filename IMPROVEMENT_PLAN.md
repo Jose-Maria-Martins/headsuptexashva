@@ -245,7 +245,7 @@ The existing `.gitignore` is a useful start but needs a deliberate artifact poli
 - Use a separate artifact location or release attachment for large reproducible result sets.
 - Add `.gitattributes` for consistent line endings and binary-file treatment.
 - Archive `cpp_engine/src/simulator.cpp.backup` after confirming it has no unique value.
-- Add `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, a pull-request template, and optionally `CODEOWNERS`.
+- Keep `SECURITY.md`, `CONTRIBUTING.md`, a pull-request template, and optionally `CODEOWNERS`.
 - Use professional, descriptive commits such as `fix(engine): deal all cards from one deck` rather than informal history messages.
 - Do not rewrite public history solely for appearance; improve all new commits and documentation.
 
