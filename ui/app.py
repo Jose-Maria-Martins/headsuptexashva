@@ -5,6 +5,7 @@ Provides Bot vs Bot and Human vs Bot gameplay visualization.
 """
 
 import random
+import os
 import sys
 import time
 from pathlib import Path
@@ -108,10 +109,13 @@ def bot_vs_bot_start():
     if not ENGINE_AVAILABLE:
         return jsonify({'error': 'Engine not available'}), 500
     
-    data = request.json
+    data = request.get_json(silent=True) or {}
     bot_a_type = data.get('botA', 'v0')
     bot_b_type = data.get('botB', 'v0')
-    hands = data.get('hands', 200)
+    try:
+        hands = max(1, min(int(data.get('hands', 200)), 10000))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'hands must be an integer between 1 and 10000'}), 400
     
     # Create bots
     bot_a = create_bot(bot_a_type, seed=42)
@@ -185,7 +189,7 @@ def play_start():
     if not ENGINE_AVAILABLE:
         return jsonify({'error': 'Engine not available'}), 500
     
-    data = request.json
+    data = request.get_json(silent=True) or {}
     difficulty = data.get('difficulty', 'v0')
     
     # Create bot opponent
@@ -546,7 +550,10 @@ def play_action():
 
     data = request.json or {}
     action = data.get('action')  # 'fold' | 'call' | 'bet'
-    bet_size = int(data.get('size', 0))
+    try:
+        bet_size = int(data.get('size', 0))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'size must be an integer'}), 400
 
     def pos_of(player):
         # human = 0, bot = 1
@@ -678,4 +685,5 @@ if __name__ == '__main__':
     print("Navigate to: http://localhost:5000")
     print("=" * 80)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug = os.environ.get('POKER_UI_DEBUG', '').lower() in {'1', 'true', 'yes'}
+    app.run(debug=debug, host='127.0.0.1', port=5000)

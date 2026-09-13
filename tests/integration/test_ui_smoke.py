@@ -27,3 +27,8 @@ def test_index_loads(client):
 def test_play_page_loads(client):
     resp = client.get("/play")
     assert resp.status_code == 200
+
+
+def test_bot_match_rejects_invalid_hand_count(client):
+    resp = client.post("/api/bot-vs-bot/start", json={"hands": "not-a-number"})
+    assert resp.status_code == 400

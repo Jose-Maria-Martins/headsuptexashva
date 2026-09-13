@@ -25,6 +25,20 @@ the v2-v0 run, down from roughly 92% in the earlier uncalibrated smoke run.
 The v2-v3 result is still a result for this simplified game, not a claim about
 full Hold'em or financial applications.
 
+## v2 rollout sensitivity
+
+Using five seeds, 20 matches per seed, and 100 hands per match:
+
+| Rollouts | v2 match wins vs Random | 95% interval | v2 bet/raise rate |
+|---:|---:|---:|---:|
+| 25 | 97% | 91.6%-99.0% | 48.7% |
+| 100 | 96% | 90.2%-98.4% | 49.1% |
+| 300 | 99% | 94.6%-99.8% | 47.8% |
+
+The calibration changed action frequency substantially, but did not remove v2's
+large advantage over the weak random baseline. That advantage is therefore a
+property of the simplified game and policy matchup, not merely a threshold bug.
+
 ## Toy-game CFR check
 
 The exploratory Kuhn/Leduc harness can be run with:
