@@ -4,12 +4,15 @@ Monte Carlo CFR Trainer for heads-up poker.
 Implements external sampling CFR with outcome sampling.
 """
 
-from poker_ai import poker_engine
-import numpy as np
 import random
-from typing import List, Tuple, Optional
-from .abstraction import CardAbstraction, ActionAbstraction
-from .infoset import InfoSet, InfoSetManager, build_infoset_key
+from typing import List, Optional, Tuple
+
+import numpy as np
+
+from poker_ai import poker_engine
+
+from .abstraction import ActionAbstraction, CardAbstraction
+from .infoset import InfoSetManager, build_infoset_key
 
 
 class GameState:

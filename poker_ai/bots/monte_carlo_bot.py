@@ -1,7 +1,8 @@
 import random
-import math
-from typing import List, Tuple, Optional
+from typing import Optional, Tuple
+
 from poker_ai import poker_engine
+
 
 class MonteCarloBot:
     """
@@ -15,18 +16,18 @@ class MonteCarloBot:
     - Position-aware adjustments
     """
     
-    def __init__(self, 
+    def __init__(self,
                  seed: int = 12345,
                  rollouts: int = 300,
                  base_call_margin: float = 0.05,
                  base_raise_margin: float = 0.08,
-                 aggression_k1: float = 0.05, 
-                 aggression_k2: float = 0.02, 
+                 aggression_k1: float = 0.05,
+                 aggression_k2: float = 0.02,
                  semi_bluff_freq: float = 0.25,
                  position_adjustment: float = 0.02,
                  preflop_raise_threshold: float = 0.65,
                  preflop_call_threshold: float = 0.40,
-                 opponent_tightness: float = 0.5,  
+                 opponent_tightness: float = 0.5,
                  board_texture_awareness: bool = True):
         """
         Initialize Monte Carlo bot.
@@ -162,7 +163,7 @@ class MonteCarloBot:
             flush_draw = True
             # Check if it's a nut flush draw (ace or king high)
             flush_suit = max(suit_counts, key=suit_counts.get)
-            flush_ranks = [poker_engine.get_rank(c) for c in all_cards 
+            flush_ranks = [poker_engine.get_rank(c) for c in all_cards
                           if poker_engine.get_suit(c) == flush_suit]
             max_flush_rank = max(flush_ranks)
             flush_strength = max_flush_rank / 12.0  # Normalize to [0, 1]
@@ -242,19 +243,19 @@ class MonteCarloBot:
         else:
             return "dry", wetness
     
-    def _adjust_thresholds_for_opponent(self, base_call_margin: float, 
+    def _adjust_thresholds_for_opponent(self, base_call_margin: float,
                                       base_raise_margin: float) -> Tuple[float, float]:
         """Adjust thresholds based on opponent tightness."""
 
-        tightness_factor = 1.0 - self.opponent_tightness  
+        tightness_factor = 1.0 - self.opponent_tightness
         
-        call_adjustment = tightness_factor * 0.02  
-        raise_adjustment = tightness_factor * 0.03 
+        call_adjustment = tightness_factor * 0.02
+        raise_adjustment = tightness_factor * 0.03
         
-        return (base_call_margin - call_adjustment, 
+        return (base_call_margin - call_adjustment,
                 base_raise_margin - raise_adjustment)
     
-    def _compute_aggression_multiplier(self, stack: int, initial_stack: int, 
+    def _compute_aggression_multiplier(self, stack: int, initial_stack: int,
                                      to_call: int, pot: int) -> float:
         """Compute aggression multiplier based on stack position and pot pressure."""
         stack_lead_ratio = (stack - initial_stack) / initial_stack
@@ -262,21 +263,21 @@ class MonteCarloBot:
         
         # Aggression increases when ahead, decreases when behind
         # Also decreases with high pot pressure (facing big bets)
-        aggression = (self.aggression_k1 * stack_lead_ratio - 
+        aggression = (self.aggression_k1 * stack_lead_ratio -
                      self.aggression_k2 * pot_pressure)
         
         return max(-0.1, min(0.2, aggression))
     
-    def _get_bet_size(self, equity: float, pot: int, stack: int, 
+    def _get_bet_size(self, equity: float, pot: int, stack: int,
                      aggression_multiplier: float) -> int:
         """Choose bet size based on equity and aggression."""
 
         if equity >= 0.8:
             base_size = pot  # 100% pot for strong hands
         elif equity >= 0.6:
-            base_size = int(pot * 0.75) 
+            base_size = int(pot * 0.75)
         elif equity >= 0.4:
-            base_size = int(pot * 0.5)   
+            base_size = int(pot * 0.5)
         else:
             base_size = int(pot * 0.25)
         
@@ -371,7 +372,7 @@ class MonteCarloBot:
                 return poker_engine.Action.CALL
             else:
                 # Randomness guard: small chance to call when close
-                if (adjusted_equity >= call_threshold - 0.02 and 
+                if (adjusted_equity >= call_threshold - 0.02 and
                     self.rng.random() < 0.02):
                     return poker_engine.Action.CALL
                 return poker_engine.Action.FOLD
@@ -386,7 +387,7 @@ class MonteCarloBot:
             # Bet with 60%+ equity (above-average hands)
             if adjusted_equity >= 0.60:
                 return poker_engine.Action.BET
-            elif (has_draw and adjusted_equity >= 0.30 and 
+            elif (has_draw and adjusted_equity >= 0.30 and
                   self.rng.random() < self.semi_bluff_freq * draw_strength):
                 # Semi-bluff with draws
                 return poker_engine.Action.BET

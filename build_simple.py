@@ -10,6 +10,7 @@ import sys
 import sysconfig
 from pathlib import Path
 
+
 def run_command(cmd, cwd=None):
     """Run a command and return success status."""
     try:
@@ -72,7 +73,7 @@ def main():
     project_root = Path.cwd()
     sources = [
         str(project_root / "cpp_engine/src/poker_engine.cpp"),
-        str(project_root / "cpp_engine/src/hand_evaluator.cpp"), 
+        str(project_root / "cpp_engine/src/hand_evaluator.cpp"),
         str(project_root / "cpp_engine/src/simulator.cpp"),
         str(project_root / "cpp_engine/src/bindings.cpp")
     ]

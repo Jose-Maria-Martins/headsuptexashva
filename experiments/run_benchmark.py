@@ -5,13 +5,14 @@ Comprehensive testing of V2 against V1, V0, and itself.
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
-import time
-import json
-import csv
-import math
 import argparse
+import csv
+import json
+import math
+import time
 from datetime import datetime
 
 from experiments.manifest_utils import (
@@ -31,15 +32,15 @@ def wilson_ci(p: float, n: int, z: float = 1.96):
     return (max(0.0, center - margin), min(1.0, center + margin))
 
 
-def run_single_seed(seed: int, matches: int, hands: int, stack: int, sb: int, bb: int, 
+def run_single_seed(seed: int, matches: int, hands: int, stack: int, sb: int, bb: int,
                    bot_a_type: str, bot_b_type: str, rollouts: int = 300, strategy_path: str = "poker_ai/cfr/strategy.json"):
     """Run one seed worth of matches, return (results_list, timing_sec)."""
     try:
         from poker_ai import poker_engine
-        from poker_ai.bots.random_bot import RandomBot as PyRandomBot
         from poker_ai.bots.hand_strength_bot import HandStrengthBot as PyHandStrengthBot
-        from poker_ai.bots.monte_carlo_bot import MonteCarloBot as PyMonteCarloBot
         from poker_ai.bots.mccfr_bot import MCCFRBot as PyMCCFRBot
+        from poker_ai.bots.monte_carlo_bot import MonteCarloBot as PyMonteCarloBot
+        from poker_ai.bots.random_bot import RandomBot as PyRandomBot
 
         # Wrap Python bot logic in C++ Bot subclass
         class CPPRandomBot(poker_engine.Bot):
@@ -139,11 +140,11 @@ def write_csv(path, rows, header):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="C++ V2/V3 Bot experiment runner")
-    parser.add_argument("--botA", type=str, default="montecarlo", 
+    parser.add_argument("--botA", type=str, default="montecarlo",
                        choices=["random", "handstrength", "montecarlo", "mccfr"],
                        help="Bot A type")
     parser.add_argument("--botB", type=str, default="handstrength",
-                       choices=["random", "handstrength", "montecarlo", "mccfr"], 
+                       choices=["random", "handstrength", "montecarlo", "mccfr"],
                        help="Bot B type")
     parser.add_argument("--strategy-path", type=str, default="poker_ai/cfr/strategy.json",
                        help="Path to MCCFR strategy file")
