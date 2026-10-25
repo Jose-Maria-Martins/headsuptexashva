@@ -1,162 +1,83 @@
-# Heads-Up Poker - Reproducible Bot Research
+<p align="center"><img src="assets/banner.svg" alt="Heads-Up Poker Bot" width="100%"></p>
 
-Educational R&D project in **adversarial decision-making under uncertainty**.
-It contains a small C++ poker engine, Python bot policies, reproducible
-benchmarks, and a local Flask demonstration.
+Four poker bots, one C++ engine, and a benchmark harness that makes every match replayable from a seed. Built to study decisions under uncertainty during an exchange at Hogeschool van Amsterdam (Fall 2025).
 
-## Academic context
+> Status: the C++ engine, three bots and the benchmark harness are done and covered by CI on Linux and Windows. The CFR bot is experimental: it still loses to the simpler Monte Carlo bot, and the section below explains why.
 
-This project was developed during an exchange at **Hogeschool van Amsterdam
-(HvA)** in **Fall 2025**. It is presented here as a research-engineering
-project: the focus is on simulation design, reproducibility, testing, and
-decision-making under uncertainty.
+## Results
 
-> **Scope:** This is **not** a trading system, financial-alpha claim, or production poker product. The bots are evaluated only in the simplified game documented below.
+Each row is 200 matches of up to 100 hands (10 seeds × 20 matches), stack 1,000, blinds 10/20. "A wins" is the share of matches the first bot won, with a 95% interval.
 
-## Why heads-up poker?
+| Matchup | A wins | 95% interval | Hands played |
+|---|---:|---:|---:|
+| HandStrength vs Random | 97.5% | 94.3%–98.9% | 15,289 |
+| Monte Carlo vs Random | 97.0% | 93.6%–98.6% | 17,728 |
+| Monte Carlo vs HandStrength | 72.5% | 65.9%–78.2% | 16,906 |
+| **Monte Carlo vs CFR** | **98.0%** | 95.0%–99.2% | 14,133 |
+| Monte Carlo vs Monte Carlo (control) | 49.0% | 42.2%–55.9% | 19,599 |
 
-Heads-up poker is a compact environment for studying adversarial decisions
-under uncertainty. With only two players, it is easier to inspect action order,
-position, bankroll changes, and strategy interactions than in a full table.
-The project is an engineering and modelling exercise; poker performance does
-not imply financial-market skill or alpha.
+Every bot beats random, and Monte Carlo beats the heuristic bot about 3 times in 4. Self-play lands near 50%, and swapping seats flips each result, so the engine doesn't favour either seat.
 
-## Why this simplified game?
+**The CFR bot loses.** CFR is the algorithm behind superhuman poker AIs, and here it loses 98% of matches to a bot that just simulates 100 random opponent hands per decision. Training longer didn't help either: a 20,000-iteration strategy with 42,648 information sets won 3 of 50 matches against Monte Carlo. The bottleneck is the card abstraction and how states map between training and play, not the number of iterations. Full numbers are in [docs/benchmark-status.md](docs/benchmark-status.md).
 
-The engine intentionally uses two betting rounds: a preflop round and one
-postflop round that reveals the complete five-card board. This keeps the state
-space and runtime small enough for repeatable experiments on a normal laptop,
-while retaining hidden information, betting pressure, position, and showdown
-uncertainty. It is not full no-limit Hold'em and results must be interpreted
-only within these documented rules.
+## The bots
 
-## Architecture
+| ID | Bot | How it decides |
+|---|---|---|
+| v0 | Random | Picks a uniformly random legal action. The baseline. |
+| v1 | HandStrength | Scores its hand preflop and against the board, then acts on thresholds. |
+| v2 | Monte Carlo | Postflop, deals the opponent's unknown cards many times (300 by default, 100 in the benchmarks) to estimate equity, then acts on thresholds. |
+| v3 | CFR (experimental) | Plays a strategy from a small tabular Monte Carlo counterfactual regret minimization (MCCFR) trainer. |
 
-```text
-cpp_engine/          C++ rules, evaluator, simulator (pybind11)
-poker_ai/            Python bots and CFR training code
-ui/                  Flask research demo (local use)
-experiments/         Manifests, runner, generated runs (ignored)
-tests/               pytest unit, integration, property, regression
-docs/                Canonical game rules and methodology notes
+To add a bot, start from [docs/bot-template.py](docs/bot-template.py).
+
+## How it works
+
+```
+manifest.json --> run_benchmark.py --> poker_engine (C++, pybind11) --> matches.csv + summary.json
+ (bots, seeds,          |                 |- deal: one 52-card deck, 9 unique cards
+  stacks, blinds)       |                 |- betting: preflop + one postflop round
+                        |                 '- showdown: hand evaluator
+                        '- poker_ai/bots: v0-v3 decide each action
 ```
 
-The **C++ engine** is the intended source of truth for dealing, betting, and showdown. The Flask UI implements a parallel state machine for human play and will be refactored to call the engine directly.
+- **The game is simplified on purpose.** There are two betting rounds: preflop, then a single postflop round with all five board cards dealt at once. That keeps hidden information, position and betting pressure while making experiments small enough to repeat on a laptop. The exact rules are in [docs/game-rules.md](docs/game-rules.md).
+- **The engine is the single source of truth.** Dealing, betting, all-in refunds and showdown run in C++ and are exposed to Python through pybind11.
+- **Every run can be replayed.** A versioned JSON manifest fixes the bots, seeds, stacks and blinds. Each run records the Git commit, the platform and hashes of its output files, and `--replay` reruns it from its summary. See [docs/reproducibility.md](docs/reproducibility.md).
+- **The rules are tested, not assumed.** pytest covers unit, integration, regression and property-based tests, and the property tests (Hypothesis) check that every deal uses nine unique cards, chips are never created or lost, and stacks never go negative.
 
-## Quick start
+## Run it
 
-### 1. Environment
+Needs Python 3.10+, CMake and a C++ compiler.
 
 ```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/macOS
-source venv/bin/activate
-
+python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -e ".[dev,experiments]"
-```
-
-### 2. Build native module
-
-**CMake (preferred):**
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
-**Fallback (Windows, MSVC in PATH):**
-
-```bash
-python build_simple.py
-```
-
-Verify:
-
-```bash
-python -c "from poker_ai import poker_engine; print(poker_engine.__version__)"
-```
-
-### 3. Run tests
-
-```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 pytest
 ```
 
-The full suite currently contains 33 tests. Integration tests that require the
-native extension are skipped when it has not been built.
+On Windows with MSVC on the PATH, `python build_simple.py` also builds the engine.
 
-### 4. Run an experiment from a manifest
+Run a benchmark, then replay it:
 
 ```bash
 python experiments/run_benchmark.py --manifest experiments/manifests/v2_vs_v0_baseline.json
-```
-
-Outputs are written to `experiments/runs/<name>_<timestamp>/` (git-ignored) with:
-
-- `matches.csv` — per-match results
-- `summary.json` — aggregates + provenance (Git commit, seeds, hashes)
-- `manifest_resolved.json` — replayable configuration
-
-Replay:
-
-```bash
 python experiments/run_benchmark.py --replay experiments/runs/<run>/summary.json
 ```
 
-### 5. Web demo (local)
+Play against the bots, or watch them play each other, in the local web demo:
 
 ```bash
-python ui/app.py
+python ui/app.py   # http://localhost:5000
 ```
 
-Open http://localhost:5000 — research demo only; debug mode must stay local.
+<p align="center"><img src="assets/demo.gif" alt="Playing a hand against the Monte Carlo bot: hole cards, the board, then the bot shows pocket aces" width="640"></p>
 
-## Bot versions
+## Limits
 
-| ID | Name           | Description                                      |
-|----|----------------|--------------------------------------------------|
-| v0 | Random         | Uniform random legal actions                     |
-| v1 | HandStrength   | Preflop/table-strength heuristic                   |
-| v2 | MonteCarlo     | Monte Carlo equity + threshold policy            |
-| v3 | Experimental CFR | Small tabular CFR policy; not a GTO claim      |
+- Results only hold for this two-round game. They say nothing about full Hold'em, and nothing about markets.
+- Monte Carlo rollouts are CPU-bound, so the large benchmarks take minutes to hours on a laptop.
+- v3 stays labelled experimental until it passes a proper exploitability check against known equilibria. The Kuhn and Leduc toy-game harness (`experiments/validate_toy_cfr.py`) is a first step.
 
-See [docs/game-rules.md](docs/game-rules.md) for the exact simplified rules under test.
-
-To add a new policy, start with [docs/bot-template.py](docs/bot-template.py)
-and follow the hierarchy and standards in [docs/code-standards.md](docs/code-standards.md).
-
-## Documentation
-
-- [Game rules](docs/game-rules.md) — canonical engine specification
-- [Reproducibility](docs/reproducibility.md) — manifests, seeds, provenance
-- [Code hierarchy and standards](docs/code-standards.md) — where code belongs and how to extend it
-- [Bot template](docs/bot-template.py) — starting point for a new policy
-- [Benchmark status](docs/benchmark-status.md) — latest seeded controls and limitations
-- [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) — engineering roadmap and future work
-
-## Resource and time limitations
-
-The project is deliberately sized for local research rather than a compute
-cluster. Monte Carlo rollouts are CPU-bound, native builds require a C++ toolchain,
-and large benchmarks can take minutes or hours depending on rollout count and
-hardware. Results therefore report actual hands and runtime, and should not be
-compared with production-scale poker solvers. The simplified game and smaller
-experiments are engineering trade-offs for reproducibility and explainability.
-
-## Status
-
-Current status:
-
-- Single-deck dealing (nine unique cards per hand)
-- Postflop BB-first action order
-- Per-street raise cap and all-in refunds
-- 33-test pytest suite and manifest-based experiments
-- larger mirror and seat-swapped benchmark matrix completed locally
-- v3 remains experimental; toy-game validation is exploratory and does not yet
-  justify a full Hold'em CFR claim
-
-The benchmark report is current for the checked-in code, but results remain
-specific to this simplified game and should not be presented as evidence of
-full Hold'em strength or financial performance.
+The roadmap is in [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md).
