@@ -55,6 +55,7 @@ struct HandResult {
     std::array<Card, 2> p0_hole = {255, 255};
     std::array<Card, 2> p1_hole = {255, 255};
     std::vector<Card> board;
+    std::array<int, 2> stacks_after = {0, 0}; // Seat stacks after the hand (set by the Python binding)
 };
 
 /**

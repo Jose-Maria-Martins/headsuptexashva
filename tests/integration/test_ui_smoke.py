@@ -32,3 +32,23 @@ def test_play_page_loads(client):
 def test_bot_match_rejects_invalid_hand_count(client):
     resp = client.post("/api/bot-vs-bot/start", json={"hands": "not-a-number"})
     assert resp.status_code == 400
+
+
+def test_bot_match_reports_progress_hand_by_hand(client):
+    pytest.importorskip("poker_ai.poker_engine")
+    resp = client.post(
+        "/api/bot-vs-bot/start", json={"botA": "v0", "botB": "v1", "hands": 30}
+    )
+    assert resp.status_code == 200
+
+    seen = []
+    while True:
+        data = client.get("/api/bot-vs-bot/next").get_json()
+        seen.append(data)
+        assert data["p0_wins"] + data["p1_wins"] <= data["hand"]
+        assert data["p0_stack"] + data["p1_stack"] == 2000
+        if data["finished"]:
+            break
+
+    assert [d["hand"] for d in seen] == sorted(d["hand"] for d in seen)
+    assert seen[-1]["hand"] == seen[-1]["total_hands"]

@@ -45,7 +45,8 @@ PYBIND11_MODULE(poker_engine, m) {
         .def_readwrite("p1_showdown_rank", &poker::HandResult::p1_showdown_rank)
         .def_readwrite("p0_hole", &poker::HandResult::p0_hole)
         .def_readwrite("p1_hole", &poker::HandResult::p1_hole)
-        .def_readwrite("board", &poker::HandResult::board);
+        .def_readwrite("board", &poker::HandResult::board)
+        .def_readwrite("stacks_after", &poker::HandResult::stacks_after);
     
     py::class_<poker::MatchResult>(m, "MatchResult")
         .def(py::init<>())
@@ -156,7 +157,14 @@ PYBIND11_MODULE(poker_engine, m) {
     // Simulator
     py::class_<poker::Simulator>(m, "Simulator")
         .def(py::init<const poker::SimConfig&>())
-        .def("simulate_hand", &poker::Simulator::simulate_hand,
+        .def("simulate_hand",
+             [](poker::Simulator& sim, poker::Bot* bot0, poker::Bot* bot1,
+                std::array<int, 2> stacks, int button) {
+                 // pybind11 copies Python lists, so return the updated stacks in the result
+                 poker::HandResult result = sim.simulate_hand(bot0, bot1, stacks, button);
+                 result.stacks_after = stacks;
+                 return result;
+             },
              py::arg("bot0"),
              py::arg("bot1"),
              py::arg("stacks"),
