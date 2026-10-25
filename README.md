@@ -1,4 +1,4 @@
-# Heads-Up Poker Bot
+<p align="center"><img src="assets/banner.svg" alt="Heads-Up Poker Bot" width="100%"></p>
 
 Four poker bots, one C++ engine, and a benchmark harness that makes every match replayable from a seed. Built to study decisions under uncertainty during an exchange at Hogeschool van Amsterdam (Fall 2025).
 
@@ -71,6 +71,8 @@ Play against the bots, or watch them play each other, in the local web demo:
 ```bash
 python ui/app.py   # http://localhost:5000
 ```
+
+<p align="center"><img src="assets/demo.gif" alt="Playing a hand against the Monte Carlo bot: hole cards, the board, then the bot shows pocket aces" width="640"></p>
 
 ## Limits
 
