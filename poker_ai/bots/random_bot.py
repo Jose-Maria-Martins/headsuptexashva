@@ -1,5 +1,6 @@
 import random
 
+
 class RandomBot:
     """
     Python RandomBot that subclasses C++ Bot interface.

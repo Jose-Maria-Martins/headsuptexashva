@@ -1,6 +1,6 @@
+from typing import List
+
 from poker_ai import poker_engine
-from typing import List, Tuple, Set
-import random
 
 
 class CardAbstraction:

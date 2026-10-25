@@ -1,6 +1,8 @@
-import numpy as np
-from typing import List, Dict, Tuple
 import json
+from typing import Dict
+
+import numpy as np
+
 
 class InfoSet:
     """

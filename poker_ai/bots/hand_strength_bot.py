@@ -1,5 +1,6 @@
 import random
 
+
 class HandStrengthBot:
     """
     Python HandStrengthBot that subclasses C++ Bot interface.

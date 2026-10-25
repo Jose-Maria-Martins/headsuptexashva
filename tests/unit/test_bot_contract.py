@@ -5,7 +5,6 @@ from pathlib import Path
 from poker_ai import poker_engine
 from poker_ai.bots import HandStrengthBot, MCCFRBot, MonteCarloBot, RandomBot
 
-
 STRATEGY_PATH = Path(__file__).parents[2] / "poker_ai" / "cfr" / "strategy.json"
 
 

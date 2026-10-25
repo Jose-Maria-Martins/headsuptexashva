@@ -4,8 +4,8 @@ Flask UI for Poker AI - MVP
 Provides Bot vs Bot and Human vs Bot gameplay visualization.
 """
 
-import random
 import os
+import random
 import sys
 import time
 from pathlib import Path
