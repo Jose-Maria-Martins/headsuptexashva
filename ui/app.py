@@ -124,26 +124,48 @@ def bot_vs_bot_start():
     # Create simulator
     config = poker_engine.SimConfig()
     config.initial_stack = 1000
-    config.small_blind = 5
-    config.big_blind = 10
+    config.small_blind = 10
+    config.big_blind = 20
     config.seed = int(time.time())
     
     sim = poker_engine.Simulator(config)
     
-    # Run the full match immediately
+    # Play the match hand by hand so the screen can replay real progress.
+    # Seats alternate like Simulator.simulate_match.
     print(f"Running match: {bot_a_type} vs {bot_b_type} ({hands} hands)")
-    result = sim.simulate_match(bot_a, bot_b, hands)
+    stacks = [config.initial_stack, config.initial_stack]
+    p0_wins = p1_wins = 0
+    snapshots = []
+    for i in range(hands):
+        if stacks[0] <= 0 or stacks[1] <= 0:
+            break
+        button = i % 2
+        if button == 0:
+            hand = sim.simulate_hand(bot_a, bot_b, stacks, button)
+            stacks = list(hand.stacks_after)
+            winner = hand.winner
+        else:
+            hand = sim.simulate_hand(bot_b, bot_a, [stacks[1], stacks[0]], button)
+            stacks = [hand.stacks_after[1], hand.stacks_after[0]]
+            winner = 1 - hand.winner if hand.winner >= 0 else hand.winner
+        if winner == 0:
+            p0_wins += 1
+        elif winner == 1:
+            p1_wins += 1
+        snapshots.append({
+            'p0_stack': stacks[0],
+            'p1_stack': stacks[1],
+            'p0_wins': p0_wins,
+            'p1_wins': p1_wins,
+        })
     
-    # Store state with full match results
+    # Store state with per-hand snapshots
     global bot_vs_bot_state
     bot_vs_bot_state = {
-        'sim': sim,
-        'bot_a': bot_a,
-        'bot_b': bot_b,
         'bot_a_type': bot_a_type,
         'bot_b_type': bot_b_type,
         'hands_to_play': hands,
-        'match_result': result,
+        'snapshots': snapshots,
         'current_hand': 0,
         'running': True
     }
@@ -157,29 +179,22 @@ def bot_vs_bot_next():
     if not bot_vs_bot_state:
         return jsonify({'error': 'No match started'}), 400
     
-    result = bot_vs_bot_state['match_result']
+    snapshots = bot_vs_bot_state['snapshots']
+    total_hands = len(snapshots)
     
-    # Increment progress
-    bot_vs_bot_state['current_hand'] += 10
-    
-    # Calculate progress percentage
-    hands_shown = min(bot_vs_bot_state['current_hand'], result.hands_played)
-    finished = bot_vs_bot_state['current_hand'] >= result.hands_played
-    
-    # Use actual data, not interpolation (interpolation was misleading)
-    p0_stack = result.p0_final_stack
-    p1_stack = result.p1_final_stack
-    p0_wins = result.p0_wins
-    p1_wins = result.p1_wins
+    # Advance 10 hands per poll
+    bot_vs_bot_state['current_hand'] = min(bot_vs_bot_state['current_hand'] + 10, total_hands)
+    hands_shown = bot_vs_bot_state['current_hand']
+    snapshot = snapshots[hands_shown - 1]
     
     return jsonify({
         'hand': hands_shown,
-        'total_hands': result.hands_played,
-        'p0_stack': p0_stack,
-        'p1_stack': p1_stack,
-        'p0_wins': p0_wins,
-        'p1_wins': p1_wins,
-        'finished': finished
+        'total_hands': total_hands,
+        'p0_stack': snapshot['p0_stack'],
+        'p1_stack': snapshot['p1_stack'],
+        'p0_wins': snapshot['p0_wins'],
+        'p1_wins': snapshot['p1_wins'],
+        'finished': hands_shown >= total_hands
     })
 
 

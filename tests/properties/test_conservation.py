@@ -46,16 +46,21 @@ class TestChipConservation:
         initial_total = 2 * cfg.initial_stack
         sim = poker_engine.Simulator(cfg)
         stacks = [cfg.initial_stack, cfg.initial_stack]
-        sim.simulate_hand(AlwaysCheckBot(), AlwaysCheckBot(), stacks, button=0)
-        assert sum(stacks) == initial_total
+        result = sim.simulate_hand(AlwaysCheckBot(), AlwaysCheckBot(), stacks, button=0)
+        assert sum(result.stacks_after) == initial_total
 
     def test_fold_preserves_chips(self):
         cfg = make_config(seed=101)
         initial_total = 2 * cfg.initial_stack
         sim = poker_engine.Simulator(cfg)
         stacks = [cfg.initial_stack, cfg.initial_stack]
-        sim.simulate_hand(AlwaysFoldBot(), AlwaysCallBot(), stacks, button=0)
-        assert sum(stacks) == initial_total
+        result = sim.simulate_hand(AlwaysFoldBot(), AlwaysCallBot(), stacks, button=0)
+        assert sum(result.stacks_after) == initial_total
+        # The small blind folds, so it loses exactly its blind
+        assert list(result.stacks_after) == [
+            cfg.initial_stack - cfg.small_blind,
+            cfg.initial_stack + cfg.small_blind,
+        ]
 
     def test_match_conserves_chips(self):
         cfg = make_config(seed=202)
